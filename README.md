@@ -9,17 +9,14 @@ Aplikace běží jako jediný samostatný soubor [`index.html`](index.html). Nep
 
 > **Bezpečnostní upozornění:** Jde o neověřený kvalitativní výukový model. Není to schválený model Bell, USMC ani DoD a nesmí být použit pro plánování letu, výcvik posádek, stanovení limitů, konstrukční výpočty, certifikaci nebo vyšetřování událostí.
 
-## Co bylo při převodu na H-1 změněno
+## Charakteristika aplikace
 
-- přidána přímá volba **UH-1Y / AH-1Z**;
-- překreslena horní silueta: UH-1Y má širokou kabinu a boční dveře, AH-1Z úzký tandemový trup, krátká křídla a závěsníky;
-- nahrazena geometrie pětilistého hlavního a třílistého ocasního rotoru společnou čtyřlistou soustavou H-1;
-- změněn rozsah hmotnosti na třídu H-1 a pro každý typ přidána vlastní výchozí hmotnost a odhad směrové setrvačnosti;
-- výkonový rozpočet vychází ze dvou motorů T700-GE-401C a v rozhraní se zobrazuje v `shp`;
-- odstraněn původní typově specifický omezovač úhlu ocasního rotoru;
-- odstraněna původní typově specifická směrová OGE korekce – dokud nebude k dispozici veřejný H-1 podklad, je korekce záměrně nulová;
-- změněny rozměry, otáčky, počty listů, odhad momentového ramene, aerodynamické plochy a výchozí kalibrace;
-- značka, metadata, odkazy a přístupný popis nyní odpovídají projektu H-1.
+- přímá volba **UH-1Y Venom / AH-1Z Viper**;
+- společná čtyřlistá rotorová soustava H-1 a dva motory T700-GE-401C;
+- samostatná horní silueta obou variant s ližinovým podvozkem;
+- vítr nastavitelný v rozsahu **0–60 kt**;
+- lokální výpočet tahu, výkonu a směrových momentů bez externích knihoven;
+- jasné označení veřejných údajů, pracovních odhadů a nevalidovaných proxy.
 
 ## Otevření a spuštění
 
@@ -37,7 +34,7 @@ Aplikace pak bude dostupná na:
 
 **<https://mates192.github.io/H-1-LAB/>**
 
-Správně nasazená verze má v záhlaví text **H-1 Tail Rotor Lab**, štítek **H-1 BUILD 0.2**, volbu UH-1Y/AH-1Z a výchozí hmotnost 7,0 t. Pokud stránka ukazuje jiný typ, původní omezovač nebo výrazně vyšší původní hmotnost, GitHub Pages stále publikuje starý `index.html` z jiné větve či složky.
+Správně nasazená verze má v záhlaví text **H-1 Tail Rotor Lab**, štítek **H-1 BUILD 0.2**, volbu UH-1Y/AH-1Z a výchozí hmotnost 7,0 t. Pokud tyto prvky chybí, GitHub Pages publikuje jiný `index.html`, větev nebo složku.
 
 První nasazení vytvoří v **Actions** automatický běh typu `pages build and deployment`; není potřeba hledat ruční akci `Deploy to GitHub Pages`.
 
@@ -98,6 +95,12 @@ Proto jsou parametry rozděleny takto:
 | směrová OGE korekce | 0 | záměrně vypnuta bez veřejného H-1 nomogramu |
 | momenty setrvačnosti a boční plochy | odlišné pro UH-1Y/AH-1Z | inženýrské odhady pro kvalitativní porovnání |
 
+### Co znamená hranice 12° v grafu
+
+Hodnota 12° **není H-1 údaj a nebyla vypočtena z geometrie UH-1Y nebo AH-1Z**. Je to konfigurovatelná didaktická proxy obecného poklesu vztlaku; v repozitáři k ní není typový H-1 polar ani validační měření. Proto je nyní v kódu i rozhraní označena jako **generic stall proxy**, ne jako kritický úhel nebo limit LTE H-1.
+
+Skutečný úhel odtržení závisí minimálně na konkrétním profilu a poloze po listu, Reynoldsově a Machově čísle, drsnosti, nestacionárním proudění a interferenci rotorů. Pro nahrazení proxy potřebujeme publikovatelné poláry profilu ocasního rotoru H-1 nebo validované rotorové testy včetně podmínek. Do té doby graf ukazuje pouze citlivost výukového modelu na zvolenou hranici.
+
 Úplný registr parametrů a jejich původu je v [`spec.md`](spec.md).
 
 ## Co je potřeba pro skutečně H-1 specifičtější výpočty
@@ -145,7 +148,7 @@ Model zachovává:
 
 Model nezahrnuje skutečné H-1 performance charts, FADEC, limity T700, transientní výkon, limity převodovek, pokles otáček, řízení stabilizačním systémem, rotorovou interferenci, detailní kýlové plochy, přízemní efekt, dopředný let, dynamické odtržení ani skutečnou typovou definici LTE. Výpočet výkonu s výškou je generický hustotní lapse model, nikoliv engine deck T700-GE-401C.
 
-AH-1Z a UH-1Y sdílejí v aplikaci pohonnou a rotorovou soustavu. Rozdíl modelu je zatím v roli, výchozí/minimální hmotnosti, odhadovaném momentu setrvačnosti a boční aerodynamické ploše. To umožňuje poctivé kvalitativní porovnání bez předstírání neveřejné přesnosti.
+AH-1Z a UH-1Y sdílejí v aplikaci pohonnou a rotorovou soustavu. Varianty mají samostatnou roli, výchozí/minimální hmotnost, odhadovaný moment setrvačnosti a boční aerodynamickou plochu. To umožňuje poctivé kvalitativní porovnání bez předstírání neveřejné přesnosti.
 
 ## Veřejné výchozí zdroje
 

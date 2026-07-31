@@ -8,21 +8,21 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg: #081116;
-      --bg-soft: #0d1a21;
-      --panel: rgba(16, 31, 39, 0.88);
-      --panel-strong: #12252e;
-      --panel-hover: #18313b;
-      --line: #29444e;
-      --line-soft: rgba(111, 151, 163, 0.2);
-      --text: #e8f2f4;
-      --muted: #96abb2;
-      --teal: #58d7c4;
-      --teal-soft: rgba(88, 215, 196, 0.14);
-      --cyan: #65c9f0;
-      --blue: #72a7ff;
-      --amber: #f2bd68;
-      --magenta: #ed70a9;
+      --bg: #111412;
+      --bg-soft: #1a1e1a;
+      --panel: rgba(35, 40, 35, 0.94);
+      --panel-strong: #303730;
+      --panel-hover: #414940;
+      --line: #687064;
+      --line-soft: rgba(210, 216, 202, 0.17);
+      --text: #f0f0e8;
+      --muted: #b2b6a9;
+      --teal: #d8ddd0;
+      --teal-soft: rgba(216, 221, 208, 0.12);
+      --cyan: #3d6fa8;
+      --blue: #4e82bb;
+      --amber: #d7b36a;
+      --magenta: #c8423a;
       --green: #64d59a;
       --red: #ff7a85;
       --shadow: 0 22px 70px rgba(0, 0, 0, 0.24);
@@ -59,9 +59,10 @@
       margin: 0;
       color: var(--text);
       background:
-        radial-gradient(circle at 12% -10%, rgba(38, 117, 120, 0.22), transparent 34rem),
-        radial-gradient(circle at 85% 20%, rgba(41, 84, 112, 0.15), transparent 34rem),
-        linear-gradient(180deg, #0a151b 0%, var(--bg) 48%, #071014 100%);
+        linear-gradient(135deg, rgba(184, 38, 43, 0.12), transparent 28%),
+        linear-gradient(225deg, rgba(35, 78, 130, 0.15), transparent 32%),
+        repeating-linear-gradient(120deg, rgba(255,255,255,0.018) 0 2px, transparent 2px 18px),
+        #111412;
     }
 
     button,
@@ -149,6 +150,10 @@
       background: var(--bg);
     }
 
+    .brand-mark::before { background: #ffffff; transform: rotate(-18deg); }
+    .brand-mark::after { background: #c82f36; transform: rotate(102deg); }
+    .brand-mark span { border-color: #315f96; }
+
     h1 {
       margin: 0;
       font-size: clamp(1.35rem, 2.5vw, 2rem);
@@ -175,11 +180,16 @@
 
     .workspace {
       display: grid;
-      grid-template-columns: minmax(250px, 310px) minmax(460px, 634px) minmax(270px, 320px);
+      grid-template-areas: "simulation simulation" "controls telemetry";
+      grid-template-columns: minmax(320px, 0.9fr) minmax(420px, 1.1fr);
       gap: 16px;
       align-items: stretch;
       justify-content: center;
     }
+
+    .controls-panel { grid-area: controls; }
+    .simulation-panel { grid-area: simulation; }
+    .telemetry-panel { grid-area: telemetry; }
 
     .panel {
       border: 1px solid var(--line-soft);
@@ -1187,6 +1197,23 @@
       stroke-width: 2px;
     }
 
+    .uh1y-shape .body-main { fill: #3f625c; }
+    .ah1z-shape .body-main { fill: #394d4b; }
+
+    .landing-skid {
+      fill: none;
+      stroke: #a7bbc0;
+      stroke-width: 4;
+      stroke-linecap: round;
+      filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.45));
+    }
+
+    .skid-strut {
+      stroke: #789097;
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
+
     .cog-ring {
       fill: rgba(88, 215, 196, 0.1);
       stroke: var(--teal);
@@ -1265,13 +1292,12 @@
 
     @media (max-width: 1180px) {
       .workspace {
-        grid-template-columns: minmax(250px, 310px) minmax(430px, 634px);
+        grid-template-columns: minmax(280px, 0.9fr) minmax(400px, 1.1fr);
       }
 
       .telemetry-panel {
-        grid-column: 1 / -1;
         display: grid;
-        grid-template-columns: 1.1fr 2fr 1.4fr;
+        grid-template-columns: 1fr;
       }
 
       .hero-readout {
@@ -1303,6 +1329,7 @@
       }
 
       .workspace {
+        grid-template-areas: "simulation" "controls" "telemetry";
         grid-template-columns: 1fr;
       }
 
@@ -1472,12 +1499,12 @@
             <div class="control-head">
               <label for="windSpeedRange">Wind speed</label>
               <div class="field-value">
-                <input id="windSpeedNumber" class="number-input" type="number" min="0" max="25" step="0.5" value="0" aria-label="Wind speed in meters per second">
-                <span class="unit">m/s</span>
+                <input id="windSpeedNumber" class="number-input" type="number" min="0" max="60" step="1" value="0" aria-label="Wind speed in knots up to sixty knots">
+                <span class="unit">kt</span>
               </div>
             </div>
-            <input id="windSpeedRange" type="range" min="0" max="25" step="0.5" value="0" aria-label="Wind speed in meters per second">
-            <div class="scale"><span>Calm</span><span>12.5</span><span>25</span></div>
+            <input id="windSpeedRange" type="range" min="0" max="60" step="1" value="0" aria-label="Wind speed in knots up to sixty knots">
+            <div class="scale"><span>Calm</span><span>30</span><span>60 kt</span></div>
           </div>
 
           <div class="control">
@@ -1657,6 +1684,11 @@
                   <path class="body-window" d="M 0 -79 C 24 -75 32 -56 31 -35 L 22 -23 L -22 -23 L -31 -35 C -32 -56 -24 -75 0 -79 Z"></path>
                   <path class="h1-detail" d="M -51 -14 L -61 -5 L -61 42 L -50 50 Z M 51 -14 L 61 -5 L 61 42 L 50 50 Z"></path>
                   <path class="h1-detail" d="M -40 53 L -53 72 L -48 75 L -33 61 Z M 40 53 L 53 72 L 48 75 L 33 61 Z"></path>
+                  <line class="skid-strut" x1="-42" y1="-8" x2="-68" y2="6"></line>
+                  <line class="skid-strut" x1="-40" y1="52" x2="-68" y2="62"></line>
+                  <line class="skid-strut" x1="42" y1="-8" x2="68" y2="6"></line>
+                  <line class="skid-strut" x1="40" y1="52" x2="68" y2="62"></line>
+                  <path class="landing-skid" d="M -68 -24 L -68 78 Q -68 87 -60 90 M 68 -24 L 68 78 Q 68 87 60 90"></path>
                   <line class="body-centerline" x1="0" y1="-80" x2="0" y2="75"></line>
                   <path class="stabilizer" d="M -22 148 L -8 140 L 8 140 L 27 153 L 9 159 L -10 159 Z"></path>
                   <text class="variant-marking" x="0" y="16" text-anchor="middle">UH-1Y</text>
@@ -1671,6 +1703,11 @@
                   <rect class="weapon-station" x="-78" y="19" width="13" height="22" rx="4"></rect>
                   <rect class="weapon-station" x="65" y="19" width="13" height="22" rx="4"></rect>
                   <circle class="weapon-station" cx="0" cy="-103" r="8"></circle>
+                  <line class="skid-strut" x1="-20" y1="-3" x2="-38" y2="8"></line>
+                  <line class="skid-strut" x1="-18" y1="48" x2="-38" y2="57"></line>
+                  <line class="skid-strut" x1="20" y1="-3" x2="38" y2="8"></line>
+                  <line class="skid-strut" x1="18" y1="48" x2="38" y2="57"></line>
+                  <path class="landing-skid" d="M -38 -19 L -38 72 Q -38 81 -31 84 M 38 -19 L 38 72 Q 38 81 31 84"></path>
                   <line class="body-centerline" x1="0" y1="-92" x2="0" y2="70"></line>
                   <path class="stabilizer" d="M -18 149 L -6 140 L 7 140 L 24 154 L 8 159 L -8 159 Z"></path>
                   <text class="variant-marking" x="0" y="38" text-anchor="middle">AH-1Z</text>
@@ -1776,7 +1813,7 @@
             </g>
 
             <line class="chart-critical-line" x1="405.6" y1="16" x2="405.6" y2="180"></line>
-            <text class="chart-critical-label" x="412" y="29">CRITICAL α · 12°</text>
+            <text class="chart-critical-label" x="412" y="29">GENERIC STALL PROXY · 12°</text>
 
             <g clip-path="url(#ltePlotClip)">
               <path id="lteCurvePath" class="chart-curve" d=""></path>
@@ -1875,11 +1912,11 @@
             <span id="tailRotorRpmValue" class="telemetry-value">1,660 rpm</span>
           </div>
           <div class="telemetry-item">
-            <span class="telemetry-label">Blade elements above critical α</span>
+            <span class="telemetry-label">Elements above generic stall proxy</span>
             <span id="stalledFractionValue" class="telemetry-value">0%</span>
           </div>
           <div class="telemetry-item">
-            <span class="telemetry-label">Simplified LTE state</span>
+            <span class="telemetry-label">Generic thrust-loss proxy</span>
             <span id="lteTelemetryValue" class="telemetry-value">Normal</span>
           </div>
         </div>
@@ -1931,7 +1968,7 @@
 
     <footer class="app-footer">
       <div class="app-footer-copy">
-        <p>Simplified educational LTE approximation. Real LTE also depends on aircraft-specific aerodynamic interactions, not one universal blade angle.</p>
+        <p>Generic educational post-stall proxy. It is not an H-1 stall boundary or an aircraft-specific LTE model.</p>
         <p>All data used in this application comes from publicly available sources.</p>
         <p>Project homepage: <a href="https://github.com/Mates192/H-1-LAB">Mates192/H-1-LAB</a></p>
       </div>
@@ -1996,7 +2033,7 @@
       clMin: -1.2,
       clMax: 1.5,
       zeroLiftAlphaRad: -1.2 * Math.PI / 180,
-      criticalAlphaRad: 12 * Math.PI / 180,
+      genericStallProxyAlphaRad: 12 * Math.PI / 180,
       collapseAlphaRad: 19 * Math.PI / 180,
       postStallLiftFraction: 0.18,
       lteFractionThreshold: 0.2,
@@ -2058,6 +2095,7 @@
 
     const DEG = Math.PI / 180;
     const RAD = 180 / Math.PI;
+    const KNOTS_PER_MPS = 1.943844492;
     let TOTAL_ENGINE_POWER_W =
       MODEL_CONFIG.enginePowerShaftHp * MODEL_CONFIG.wattsPerShaftHorsepower;
     let MAIN_ROTOR_OMEGA_RAD_S =
@@ -2584,17 +2622,17 @@
         config.clMax
       );
 
-      if (alphaRadians <= config.criticalAlphaRad) {
+      if (alphaRadians <= config.genericStallProxyAlphaRad) {
         return linear;
       }
 
       const progress = smoothstep01(
-        (alphaRadians - config.criticalAlphaRad) /
-        (config.collapseAlphaRad - config.criticalAlphaRad)
+        (alphaRadians - config.genericStallProxyAlphaRad) /
+        (config.collapseAlphaRad - config.genericStallProxyAlphaRad)
       );
       const liftAtCritical = clamp(
         config.liftCurveSlope *
-          (config.criticalAlphaRad - config.zeroLiftAlphaRad),
+          (config.genericStallProxyAlphaRad - config.zeroLiftAlphaRad),
         config.clMin,
         config.clMax
       );
@@ -2686,7 +2724,7 @@
             alphaCount += 1;
             alphaMin = Math.min(alphaMin, alpha);
             alphaMax = Math.max(alphaMax, alpha);
-            if (alpha > config.criticalAlphaRad) {
+            if (alpha > config.genericStallProxyAlphaRad) {
               stalledElementCount += 1;
             }
           }
@@ -3410,15 +3448,15 @@
       const fraction = model.tail.stalledElementFraction;
       if (fraction >= MODEL_CONFIG.lteFractionThreshold) {
         return {
-          text: "LTE · thrust loss",
-          telemetry: "LTE — thrust loss",
+          text: "Proxy · thrust loss",
+          telemetry: "Proxy — thrust loss",
           state: "lte"
         };
       }
       if (fraction > 0) {
         return {
-          text: "LTE onset",
-          telemetry: "LTE onset",
+          text: "Proxy onset",
+          telemetry: "Proxy onset",
           state: "onset"
         };
       }
@@ -3450,10 +3488,10 @@
         };
       }
       if (lte.state === "lte") {
-        return { text: "LTE · tail thrust loss", state: "lte" };
+        return { text: "Proxy · tail thrust loss", state: "lte" };
       }
       if (lte.state === "onset") {
-        return { text: "Critical α exceeded", state: "active" };
+        return { text: "Generic stall proxy exceeded", state: "active" };
       }
       if (torqueBalanced && yaw.direction === "STABLE") {
         return { text: "Yaw moments balanced", state: "balanced" };
@@ -3480,11 +3518,11 @@
 
       if (lte.state === "lte") {
         const percent = Math.round(model.tail.stalledElementFraction * 100);
-        return `${percent}% of sampled blade elements are beyond the 12° critical angle. The simplified post-stall model has sharply reduced tail-rotor thrust, allowing yaw to build if the remaining moments are not balanced.`;
+        return `${percent}% of sampled blade elements are above the generic 12° stall proxy. The simplified post-stall model has sharply reduced tail-rotor thrust, allowing yaw to build if the remaining moments are not balanced.`;
       }
 
       if (lte.state === "onset") {
-        return "Part of the tail rotor has crossed the critical blade angle. The thrust curve is beginning to roll over toward the simplified LTE region.";
+        return "Part of the tail rotor has crossed the generic stall-proxy angle. The thrust curve is beginning to roll over toward the generic modeled thrust-loss region.";
       }
 
       if (yawIsStable && accelerationIsSmall) {
@@ -3531,7 +3569,7 @@
       elements.windLine.setAttribute("x2", endX.toFixed(2));
       elements.windLine.setAttribute("y2", endY.toFixed(2));
       elements.windLine.setAttribute("opacity", speed <= 0.01 ? "0.18" : "1");
-      elements.windLabel.textContent = speed <= 0.01 ? "Calm" : `${speed.toFixed(1)} m/s`;
+      elements.windLabel.textContent = speed <= 0.01 ? "Calm" : `${(speed * KNOTS_PER_MPS).toFixed(0)} kt`;
       elements.windSubLabel.textContent =
         `Wind from ${compassPoint(state.windFromDegrees)} · ${String(Math.round(state.windFromDegrees)).padStart(3, "0")}°`;
     }
@@ -3795,9 +3833,9 @@
 
       const visualState = chartVisualState.visibleLteState;
       const visualText = visualState === "lte"
-        ? "LTE · thrust loss"
+        ? "Proxy · thrust loss"
         : visualState === "onset"
-          ? "LTE onset"
+          ? "Proxy onset"
           : "Normal flow";
       elements.chartCurrentPoint.classList.toggle("lte", visualState === "lte");
       elements.lteStateBadge.textContent = visualText;
@@ -3977,7 +4015,7 @@
           `Applied OGE wind correction ${Math.round(model.ogeWind.appliedCorrectionKg)} kilograms. ` +
           `Actual tail-rotor thrust ${Math.round(model.tail.thrustN)} newtons. ` +
           `Mean blade angle of attack ${meanAoaDeg.toFixed(1)} degrees. ` +
-          `Simplified LTE state ${lte.telemetry}.`;
+          `Generic thrust-loss proxy state ${lte.telemetry}.`;
       }
     }
 
@@ -4013,8 +4051,8 @@
         (state.helicopterWeightKg / 1000).toFixed(1).replace(".", ",");
       updateAngularMomentumControlUi();
       updateAtmosphereControlUi();
-      elements.windSpeedRange.value = String(state.windSpeedMps);
-      elements.windSpeedNumber.value = String(state.windSpeedMps);
+      elements.windSpeedRange.value = String(Math.round(state.windSpeedMps * KNOTS_PER_MPS));
+      elements.windSpeedNumber.value = String(Math.round(state.windSpeedMps * KNOTS_PER_MPS));
       elements.windDirectionRange.value = String(Math.round(state.windFromDegrees));
       elements.windDirectionNumber.value = String(Math.round(state.windFromDegrees));
       elements.compassArrow.style.transform = `rotate(${state.windFromDegrees}deg)`;
@@ -4317,9 +4355,12 @@
 
       bindPair(elements.windSpeedRange, elements.windSpeedNumber, {
         min: 0,
-        max: 25,
-        get: () => state.windSpeedMps,
-        set: value => { state.windSpeedMps = Math.round(value * 2) / 2; }
+        max: 60,
+        get: () => Math.round(state.windSpeedMps * KNOTS_PER_MPS),
+        set: value => {
+          const knots = Math.round(value);
+          state.windSpeedMps = knots / KNOTS_PER_MPS;
+        }
       });
 
       elements.windDirectionRange.addEventListener("input", () => {

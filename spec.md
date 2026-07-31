@@ -8,11 +8,11 @@
 - **Účel:** kvalitativní demonstrace směrové rovnováhy ve visu OGE
 - **Stav validace:** nevalidovaný výukový prototyp
 
-## 2. Zásady převodu na H-1
+## 2. Zásady modelu H-1
 
-1. Parametry původního typu se nesmějí potichu přenést na H-1.
+1. Každý parametr musí být dohledatelný jako veřejný údaj, odhad nebo didaktická konstanta.
 2. Veřejně doložené údaje, inženýrské odhady a čistě didaktické konstanty musí být rozlišeny.
-3. Chybějící H-1 tabulka se nahrazuje neutrální hodnotou, ne tabulkou jiného typu.
+3. Chybějící H-1 tabulka se nahrazuje neutrální hodnotou.
 4. Přepnutí varianty musí přepočítat výkonové konstanty, kalibraci, trim, hmotnost a moment setrvačnosti.
 5. Výstup nesmí být prezentován jako provozní limit ani jako Bell/USMC schválený model.
 
@@ -34,7 +34,7 @@
 | `tailMomentArmM` | 9,0 m | geometrický odhad | vzdálenost účinné síly od těžiště |
 | `tailRotorMinPitchDeg` | −10° | didaktická konstanta | není řídicí doraz H-1 |
 | `tailRotorPhysicalMaxPitchDeg` | +20° | didaktická konstanta | není řídicí doraz H-1 |
-| `criticalAlphaRad` | 12° | didaktický airfoil model | není typová mez LTE |
+| `genericStallProxyAlphaRad` | 12° | didaktická proxy | konfigurovatelný bod obecného poklesu vztlaku; není vypočtený ani validovaný pro H-1 a není typovou mezí LTE |
 
 ### 3.2 UH-1Y Venom
 
@@ -52,7 +52,7 @@
 - modelová boční plocha: 14 m²;
 - rameno středu tlaku: −0,7 m.
 
-Rozdíly mezi variantami jsou záměrně omezeny na parametry, které lze v tomto stupni modelu obhájit kvalitativně. Zbraňové konfigurace, vnější závěsníky, kabina, užitečné zatížení a konkrétní poloha těžiště zatím nejsou samostatné volby.
+Parametry variant jsou záměrně omezeny na parametry, které lze v tomto stupni modelu obhájit kvalitativně. Zbraňové konfigurace, vnější závěsníky, kabina, užitečné zatížení a konkrétní poloha těžiště zatím nejsou samostatné volby.
 
 ## 4. Výpočtový model
 
@@ -74,7 +74,7 @@ Do výsledného momentu vstupuje reakční moment hlavního rotoru, síla ocasn�
 
 ### OGE vítr
 
-Všechny křivky `OGE_WIND_NOMOGRAM` jsou nulové. Vítr nadále ovlivňuje ocasní rotor a boční moment trupu, ale nemění mezní hmotnost visu. Jde o záměrnou ochranu proti použití nomogramu jiného typu na H-1.
+Všechny křivky `OGE_WIND_NOMOGRAM` jsou nulové. Vítr nadále ovlivňuje ocasní rotor a boční moment trupu, ale nemění mezní hmotnost visu. Hodnota zůstává neutrální, dokud nebude dostupný publikovatelný H-1 podklad.
 
 ## 5. Přepínání varianty
 
@@ -92,7 +92,7 @@ Tím se zabrání tomu, aby po změně typu zůstala kalibrace nebo neplatná hm
 ## 6. Akceptační kritéria
 
 - dokument je validní HTML a JavaScript projde syntaktickou kontrolou;
-- v kódu ani viditelném rozhraní nezůstane konfigurace původního typu;
+- kód a viditelné rozhraní používají výhradně terminologii H-1;
 - hlavní rotor má čtyři vykreslené listy;
 - volba varianty obsahuje právě UH-1Y a AH-1Z;
 - každá varianta po výběru vytvoří konečný numerický trim bez výjimky;
