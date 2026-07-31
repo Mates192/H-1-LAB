@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="An educational, single-file visualization of helicopter yaw, directional pedals, wind, and tail-rotor aerodynamics.">
-  <title>Tail Rotor Lab</title>
+  <meta name="description" content="An educational H-1 helicopter yaw and tail-rotor simulation for the AH-1Z Viper and UH-1Y Venom.">
+  <title>H-1 Tail Rotor Lab</title>
   <style>
     :root {
       color-scheme: dark;
@@ -242,6 +242,21 @@
       color: var(--text);
       font-size: 0.88rem;
       font-weight: 600;
+    }
+
+    .aircraft-select {
+      width: 100%;
+      border: 1px solid rgba(150, 184, 194, 0.34);
+      border-radius: 8px;
+      background: #132930;
+      color: #eef7f8;
+      padding: 0.7rem 0.75rem;
+      font: inherit;
+    }
+
+    .aircraft-select:focus-visible {
+      outline: 2px solid #65c9f0;
+      outline-offset: 2px;
     }
 
     .field-value {
@@ -1399,11 +1414,11 @@
 <body>
   <main class="app">
     <header class="app-header">
-      <a class="brand" href="https://github.com/vrabczak/TailRotorLab" aria-label="Tail Rotor Lab project homepage on GitHub">
+      <a class="brand" href="https://github.com/Mates192/H-1-LAB" aria-label="H-1 Tail Rotor Lab project homepage on GitHub">
         <div class="brand-mark" aria-hidden="true"><span></span></div>
         <div>
-          <h1>Tail Rotor Lab</h1>
-          <p class="subtitle">Explore how torque, wind, and yaw reshape tail-rotor thrust.</p>
+          <h1>H-1 Tail Rotor Lab</h1>
+          <p class="subtitle">Compare AH-1Z Viper and UH-1Y Venom yaw dynamics in OGE hover.</p>
         </div>
       </a>
       <div class="header-actions" aria-label="Simulation controls">
@@ -1485,29 +1500,40 @@
 
           <div class="control">
             <div class="control-head">
+              <label for="aircraftSelect">H-1 variant</label>
+            </div>
+            <select id="aircraftSelect" class="aircraft-select" aria-label="Select H-1 helicopter variant">
+              <option value="UH1Y">UH-1Y Venom</option>
+              <option value="AH1Z">AH-1Z Viper</option>
+            </select>
+            <div id="aircraftRole" class="scale"><span>Utility / assault support</span><span>Common H-1 platform</span></div>
+          </div>
+
+          <div class="control">
+            <div class="control-head">
               <label for="weightRange">Weight</label>
               <div class="field-value">
-                <input id="weightNumber" class="number-input" type="text" inputmode="decimal" value="13,0" aria-label="Helicopter weight in metric tonnes">
+                <input id="weightNumber" class="number-input" type="text" inputmode="decimal" value="7,0" aria-label="Helicopter weight in metric tonnes">
                 <span class="unit">t</span>
               </div>
             </div>
-            <input id="weightRange" type="range" min="9" max="13" step="0.1" value="13" aria-label="Helicopter weight from nine to thirteen metric tonnes">
-            <div class="scale"><span>9,0</span><span>11,0</span><span>13,0 t</span></div>
+            <input id="weightRange" type="range" min="5.4" max="8.391" step="0.1" value="7" aria-label="UH-1Y model weight from 5.4 to 8.391 metric tonnes">
+            <div class="scale"><span id="weightMinScale">5,4</span><span id="weightMidScale">6,9</span><span id="weightMaxScale">8,4 t</span></div>
           </div>
 
           <div class="control">
             <div class="control-head">
               <label for="angularMomentumRange">Angular Momentum</label>
               <div class="field-value">
-                <input id="angularMomentumNumber" class="number-input" type="number" min="80" max="160" step="0.1" value="120.0" aria-label="Simplified yaw moment of inertia in tonne square meters">
+                <input id="angularMomentumNumber" class="number-input" type="number" min="25" max="70" step="0.1" value="48.0" aria-label="Simplified yaw moment of inertia in tonne square meters">
                 <span class="unit">t&middot;m&sup2;</span>
               </div>
             </div>
-            <input id="angularMomentumRange" type="range" min="80" max="160" step="1" value="120" aria-label="Simplified yaw moment of inertia in tonne square meters for the current helicopter weight">
+            <input id="angularMomentumRange" type="range" min="25" max="70" step="1" value="48" aria-label="Simplified yaw moment of inertia in tonne square meters for the current helicopter weight">
             <div class="scale">
-              <span id="angularMomentumMinScale">80</span>
-              <span id="angularMomentumMidScale">120</span>
-              <span id="angularMomentumMaxScale">160 t&middot;m&sup2;</span>
+              <span id="angularMomentumMinScale">25</span>
+              <span id="angularMomentumMidScale">48</span>
+              <span id="angularMomentumMaxScale">70 t&middot;m&sup2;</span>
             </div>
           </div>
         </section>
@@ -1525,8 +1551,8 @@
 
           <div class="simulation-stage">
             <svg id="simulationSvg" viewBox="50 40 660 540" role="img" aria-labelledby="svgTitle svgDescription">
-            <title id="svgTitle">Top-down yaw simulation of a Mi-17-class helicopter</title>
-            <desc id="svgDescription">A clockwise main rotor, body-fixed tail-rotor thrust vector, world-fixed wind vector, yaw moment indicators, and an estimated climb or descent rate update continuously.</desc>
+            <title id="svgTitle">Top-down yaw simulation of a UH-1Y Venom</title>
+            <desc id="svgDescription">A four-blade main rotor, body-fixed tail-rotor thrust vector, world-fixed wind vector, yaw moment indicators, and an estimated climb or descent rate update continuously.</desc>
             <defs>
               <linearGradient id="bodyGradient" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0" stop-color="#57717a"/>
@@ -1587,10 +1613,9 @@
 
                 <g id="mainRotorVisual">
                   <path class="rotor-blade" d="M 8 -8 C 70 -15, 128 -11, 170 -5 L 170 5 C 125 8, 68 12, 8 8 Z"></path>
-                  <path class="rotor-blade" transform="rotate(72)" d="M 8 -8 C 70 -15, 128 -11, 170 -5 L 170 5 C 125 8, 68 12, 8 8 Z"></path>
-                  <path class="rotor-blade" transform="rotate(144)" d="M 8 -8 C 70 -15, 128 -11, 170 -5 L 170 5 C 125 8, 68 12, 8 8 Z"></path>
-                  <path class="rotor-blade" transform="rotate(216)" d="M 8 -8 C 70 -15, 128 -11, 170 -5 L 170 5 C 125 8, 68 12, 8 8 Z"></path>
-                  <path class="rotor-blade" transform="rotate(288)" d="M 8 -8 C 70 -15, 128 -11, 170 -5 L 170 5 C 125 8, 68 12, 8 8 Z"></path>
+                  <path class="rotor-blade" transform="rotate(90)" d="M 8 -8 C 70 -15, 128 -11, 170 -5 L 170 5 C 125 8, 68 12, 8 8 Z"></path>
+                  <path class="rotor-blade" transform="rotate(180)" d="M 8 -8 C 70 -15, 128 -11, 170 -5 L 170 5 C 125 8, 68 12, 8 8 Z"></path>
+                  <path class="rotor-blade" transform="rotate(270)" d="M 8 -8 C 70 -15, 128 -11, 170 -5 L 170 5 C 125 8, 68 12, 8 8 Z"></path>
                 </g>
 
                 <path class="tail-boom" d="M -13 46 L 13 46 L 7 151 L -7 151 Z"></path>
@@ -1625,12 +1650,12 @@
             <div class="control-head">
               <label for="pedalRange">Yaw Pedals</label>
               <div class="field-value">
-                <input id="pedalNumber" class="number-input" type="number" min="-6" max="20.6" step="0.1" value="11.2" aria-label="Tail-rotor blade pitch at seventy percent radius, limited by SPUU-52">
+                <input id="pedalNumber" class="number-input" type="number" min="-10" max="20" step="0.1" value="11.2" aria-label="Estimated H-1 tail-rotor blade pitch at seventy percent radius">
                 <span class="unit">°</span>
               </div>
             </div>
-            <input id="pedalRange" type="range" min="-6" max="20.6" step="0.1" value="11.2" aria-label="Tail-rotor pitch up to the SPUU-52 atmospheric limit" aria-keyshortcuts="ArrowLeft ArrowRight">
-            <div class="scale"><span>−6°</span><span id="pitchLimitScale">SPUU-52 max 20.6°</span></div>
+            <input id="pedalRange" type="range" min="-10" max="20" step="0.1" value="11.2" aria-label="Estimated H-1 tail-rotor pitch" aria-keyshortcuts="ArrowLeft ArrowRight">
+            <div class="scale"><span>−10°</span><span id="pitchLimitScale">Model max 20.0°</span></div>
           </div>
 
           <div class="control simulation-control power-rail">
@@ -1755,16 +1780,16 @@
             <span id="pitchValue" class="telemetry-value">0.0°</span>
           </div>
           <div class="telemetry-item">
-            <span class="telemetry-label">SPUU-52 pitch limit</span>
-            <span id="spuuPitchLimitValue" class="telemetry-value">20.6°</span>
+            <span class="telemetry-label">Model pitch limit</span>
+            <span id="pitchLimitValue" class="telemetry-value">20.0°</span>
           </div>
           <div class="telemetry-item">
             <span class="telemetry-label">Main-rotor OGE lift capability</span>
-            <span id="mainRotorThrustValue" class="telemetry-value">14,000 kg</span>
+            <span id="mainRotorThrustValue" class="telemetry-value">9,000 kg</span>
           </div>
           <div class="telemetry-item">
             <span class="telemetry-label">Helicopter weight</span>
-            <span id="helicopterWeightValue" class="telemetry-value">13,0 t</span>
+            <span id="helicopterWeightValue" class="telemetry-value">7,0 t</span>
           </div>
           <div class="telemetry-item">
             <span class="telemetry-label">MSA altitude</span>
@@ -1780,11 +1805,11 @@
           </div>
           <div class="telemetry-item">
             <span class="telemetry-label">Maximum engine power at altitude</span>
-            <span id="availableEnginePowerValue" class="telemetry-value">4,000 k.s.</span>
+            <span id="availableEnginePowerValue" class="telemetry-value">3,600 shp</span>
           </div>
           <div class="telemetry-item">
             <span class="telemetry-label">Power split · main / tail</span>
-            <span id="powerSplitValue" class="telemetry-value">3,630 / 370 k.s.</span>
+            <span id="powerSplitValue" class="telemetry-value">main / tail shp</span>
           </div>
           <div class="telemetry-item">
             <span class="telemetry-label">Hover efficiency · main / tail</span>
@@ -1796,7 +1821,7 @@
           </div>
           <div class="telemetry-item">
             <span class="telemetry-label">Tail-rotor speed</span>
-            <span id="tailRotorRpmValue" class="telemetry-value">1,120 rpm</span>
+            <span id="tailRotorRpmValue" class="telemetry-value">1,660 rpm</span>
           </div>
           <div class="telemetry-item">
             <span class="telemetry-label">Blade elements above critical α</span>
@@ -1809,10 +1834,10 @@
         </div>
 
         <section class="panel-section" aria-labelledby="ogeWindHeading">
-          <h2 id="ogeWindHeading" class="section-kicker">OGE wind correction</h2>
+          <h2 id="ogeWindHeading" class="section-kicker">H-1 OGE wind correction</h2>
           <div class="oge-summary">
-            <span class="oge-summary-label">Applied at current relative direction</span>
-            <span id="ogeActualCorrectionValue" class="oge-summary-value">Calm · 0 kg / 0 kW</span>
+            <span class="oge-summary-label">No public directional performance table — neutral</span>
+            <span id="ogeActualCorrectionValue" class="oge-summary-value">Not modelled · 0 kg / 0 kW</span>
           </div>
         </section>
 
@@ -1857,9 +1882,9 @@
       <div class="app-footer-copy">
         <p>Simplified educational LTE approximation. Real LTE also depends on aircraft-specific aerodynamic interactions, not one universal blade angle.</p>
         <p>All data used in this application comes from publicly available sources.</p>
-        <p>Project homepage: <a href="https://github.com/vrabczak/TailRotorLab">vrabczak/TailRotorLab</a></p>
+        <p>Project homepage: <a href="https://github.com/Mates192/H-1-LAB">Mates192/H-1-LAB</a></p>
       </div>
-      <span>Clockwise main rotor · viewed from above</span>
+      <span>H-1 common four-blade rotor system · viewed from above</span>
     </footer>
 
     <div id="accessibleSummary" class="sr-only" aria-live="polite"></div>
@@ -1868,64 +1893,54 @@
   <script>
     "use strict";
 
-    const MODEL_CONFIG = Object.freeze({
-      enginePowerMetricHp: 4000,
-      metricHorsepowerWatts: 735.49875,
-      seaLevelTakeoffPowerHoverThrustKg: 14000,
-      referenceHelicopterWeightKg: 13000,
-      minHelicopterWeightKg: 9000,
-      maxHelicopterWeightKg: 13000,
+    // Public H-1 dimensions are combined with explicitly identified engineering
+    // estimates where detailed drivetrain and blade data are not publicly released.
+    const COMMON_H1_CONFIG = Object.freeze({
+      enginePowerShaftHp: 3600,
+      wattsPerShaftHorsepower: 745.699872,
+      seaLevelTakeoffPowerHoverThrustKg: 9000,
+      referenceHelicopterWeightKg: 8391,
       minMsaAltitudeM: 0,
       maxMsaAltitudeM: 6000,
       minAirTemperatureC: -50,
       maxAirTemperatureC: 50,
-      engineFlatRatingAltitudeM: 3600,
+      engineFlatRatingAltitudeM: 0,
       standardSeaLevelTemperatureK: 288.15,
       standardTemperatureLapseRateKPerM: 0.0065,
       standardGravityMps2: 9.80665,
       specificGasConstantAirJkgK: 287.05287,
       standardSeaLevelPressureMmHg: 760,
       millimetersMercuryToPascal: 133.322368,
-      mainRotorRadiusM: 10.65,
-      mainRotorRpm: 192,
-      mainRotorBlades: 5,
-      mainRotorChordM: 0.521,
-      mainRotorRootFraction: 0.2,
-      mainRotorSolidity: 0.0777,
-      mainRotorTwistDeg: -6,
-      mainRotorInducedPowerFactor: 1.2,
+      mainRotorRadiusM: 7.315,
+      mainRotorRpm: 324,
+      mainRotorBlades: 4,
+      mainRotorChordM: 0.53,
+      mainRotorRootFraction: 0.18,
+      mainRotorSolidity: 0.092,
+      mainRotorTwistDeg: -8,
+      mainRotorInducedPowerFactor: 1.18,
       mainRotorTipLossRadiusFactor: 0.97,
       mainRotorMeanProfileCd: 0.011,
-      mainRotorFallbackFigureOfMerit: 0.62,
-      helicopterTipToTipLengthM: 25.352,
-      tailMomentArmM: 25.352 - 10.65 - 1.954,
-      nominalTailThrustEstimateN: 10420,
-      yawInertiaKgM2: 120000,
-      minYawInertiaAtReferenceWeightKgM2: 80000,
-      maxYawInertiaAtReferenceWeightKgM2: 160000,
-      yawDampingLinear: 1200,
-      yawDampingQuadratic: 1000,
+      mainRotorFallbackFigureOfMerit: 0.69,
+      helicopterTipToTipLengthM: 17.78,
+      tailMomentArmM: 9.0,
+      nominalTailThrustEstimateN: 6200,
+      yawDampingLinear: 850,
+      yawDampingQuadratic: 700,
       seaLevelAirDensityKgM3: 1.225,
       fuselageLateralCd: 1,
-      fuselageLateralAreaM2: 25,
-      centerOfPressureXM: -1.2,
-      tailRotorRadiusM: 1.954,
-      tailRotorPlanformAreaM2: 3 * 0.305 * 1.954 * (1 - 0.2),
+      tailRotorRadiusM: 1.46,
+      tailRotorPlanformAreaM2: 4 * 0.25 * 1.46 * (1 - 0.2),
       tailRotorRootFraction: 0.2,
-      tailRotorBlades: 3,
-      tailRotorChordM: 0.305,
-      tailRotorSolidity: 3 * 0.305 / (Math.PI * 1.954),
-      tailRotorRpm: 1120,
-      tailRotorOmegaRadS: 1120 * 2 * Math.PI / 60,
-      tailRotorMaxGearboxPowerW: 442000,
+      tailRotorBlades: 4,
+      tailRotorChordM: 0.25,
+      tailRotorSolidity: 4 * 0.25 / (Math.PI * 1.46),
+      tailRotorRpm: 1660,
+      tailRotorOmegaRadS: 1660 * 2 * Math.PI / 60,
+      tailRotorMaxGearboxPowerW: 400000,
       pitchReferenceRadiusFraction: 0.7,
-      tailRotorMinPitchDeg: -6,
-      tailRotorPhysicalMaxPitchDeg: 23.25,
-      spuu52MinLimitedPitchDeg: 17 + 20 / 60,
-      spuu52ReferenceTemperatureC: 10,
-      spuu52ReferencePositionPercent: 50,
-      spuu52TemperatureGainPercentPerC: 1.05,
-      spuu52PressureGainPercentPerMmHg: 0.28,
+      tailRotorMinPitchDeg: -10,
+      tailRotorPhysicalMaxPitchDeg: 20,
       liftCurveSlope: 5.7,
       clMin: -1.2,
       clMax: 1.5,
@@ -1934,11 +1949,11 @@
       collapseAlphaRad: 19 * Math.PI / 180,
       postStallLiftFraction: 0.18,
       lteFractionThreshold: 0.2,
-      cd0: 0.0069,
-      dragPolarK: 0.015,
-      tailRotorInducedPowerFactor: 1.2,
+      cd0: 0.008,
+      dragPolarK: 0.018,
+      tailRotorInducedPowerFactor: 1.18,
       tailRotorTipLossRadiusFactor: 0.97,
-      tailRotorMaximumFigureOfMerit: 0.52,
+      tailRotorMaximumFigureOfMerit: 0.58,
       radialSamples: 12,
       azimuthSamples: 24,
       inducedIterations: 7,
@@ -1957,14 +1972,47 @@
       chartUpdateIntervalS: 0.2
     });
 
+    const AIRCRAFT_CONFIGS = Object.freeze({
+      UH1Y: Object.freeze({
+        ...COMMON_H1_CONFIG,
+        key: "UH1Y",
+        designation: "UH-1Y Venom",
+        role: "Utility / assault support",
+        defaultWeightKg: 7000,
+        minHelicopterWeightKg: 5400,
+        maxHelicopterWeightKg: 8391,
+        yawInertiaKgM2: 48000,
+        minYawInertiaAtReferenceWeightKgM2: 30000,
+        maxYawInertiaAtReferenceWeightKgM2: 70000,
+        fuselageLateralAreaM2: 18,
+        centerOfPressureXM: -0.9
+      }),
+      AH1Z: Object.freeze({
+        ...COMMON_H1_CONFIG,
+        key: "AH1Z",
+        designation: "AH-1Z Viper",
+        role: "Attack / armed escort",
+        defaultWeightKg: 6800,
+        minHelicopterWeightKg: 5600,
+        maxHelicopterWeightKg: 8391,
+        yawInertiaKgM2: 44000,
+        minYawInertiaAtReferenceWeightKgM2: 28000,
+        maxYawInertiaAtReferenceWeightKgM2: 64000,
+        fuselageLateralAreaM2: 14,
+        centerOfPressureXM: -0.7
+      })
+    });
+
+    let MODEL_CONFIG = AIRCRAFT_CONFIGS.UH1Y;
+
     const DEG = Math.PI / 180;
     const RAD = 180 / Math.PI;
-    const TOTAL_ENGINE_POWER_W =
-      MODEL_CONFIG.enginePowerMetricHp * MODEL_CONFIG.metricHorsepowerWatts;
-    const MAIN_ROTOR_OMEGA_RAD_S =
+    let TOTAL_ENGINE_POWER_W =
+      MODEL_CONFIG.enginePowerShaftHp * MODEL_CONFIG.wattsPerShaftHorsepower;
+    let MAIN_ROTOR_OMEGA_RAD_S =
       MODEL_CONFIG.mainRotorRpm * 2 * Math.PI / 60;
     const TAIL_DISK_AREA = Math.PI * MODEL_CONFIG.tailRotorRadiusM ** 2;
-    const DEFAULT_INDUCED_VELOCITY = Math.sqrt(
+    let DEFAULT_INDUCED_VELOCITY = Math.sqrt(
       MODEL_CONFIG.nominalTailThrustEstimateN /
       (2 * MODEL_CONFIG.seaLevelAirDensityKgM3 * TAIL_DISK_AREA)
     );
@@ -1979,30 +2027,20 @@
       yMax: 35000
     });
 
-    // Digitized from Mi-8MTV-5-1 Flight Manual, section 1, Figure 1.2:
-    // change in limiting OGE hover weight at 20 m versus wind speed/direction.
-    // The source combines left and right crosswind into one curve.
+    // No public H-1 directional OGE nomogram has been identified. Keep this
+    // correction neutral rather than reusing aircraft-specific Mi-8 data.
     const OGE_WIND_NOMOGRAM = Object.freeze({
-      front: Object.freeze([
-        [0, 0], [1, 60], [2, 120], [3, 180], [4, 250], [5, 370],
-        [6, 490], [7, 625], [8, 770], [9, 930], [10, 1100]
-      ]),
-      side: Object.freeze([
-        [0, 0], [1, -150], [2, -220], [3, -170], [4, 0], [5, 150],
-        [6, 310], [7, 475], [8, 650], [9, 820], [10, 1000]
-      ]),
-      rear: Object.freeze([
-        [0, 0], [1, -260], [2, -500], [3, -650], [4, -750],
-        [5, -800], [6, -775], [7, -700], [8, -600], [9, -475],
-        [10, -325]
-      ])
+      front: Object.freeze([[0, 0], [10, 0]]),
+      side: Object.freeze([[0, 0], [10, 0]]),
+      rear: Object.freeze([[0, 0], [10, 0]])
     });
     const OGE_OBLIQUE_FLOW_TRANSITION_MPS = 40 / 3.6;
 
     const state = {
+      aircraftKey: "UH1Y",
       tailRotorPitchDegrees: 11.2,
       enginePowerPercent: 100,
-      helicopterWeightKg: 13000,
+      helicopterWeightKg: MODEL_CONFIG.defaultWeightKg,
       yawInertiaKgM2: MODEL_CONFIG.yawInertiaKgM2,
       msaAltitudeM: 0,
       airTemperatureC: 15,
@@ -2052,12 +2090,18 @@
     const elements = {
       errorBanner: document.getElementById("errorBanner"),
       controlsPanel: document.querySelector(".controls-panel"),
+      aircraftSelect: document.getElementById("aircraftSelect"),
+      aircraftRole: document.getElementById("aircraftRole"),
+      svgTitle: document.getElementById("svgTitle"),
       pedalRange: document.getElementById("pedalRange"),
       pedalNumber: document.getElementById("pedalNumber"),
       thrustRange: document.getElementById("thrustRange"),
       thrustNumber: document.getElementById("thrustNumber"),
       weightRange: document.getElementById("weightRange"),
       weightNumber: document.getElementById("weightNumber"),
+      weightMinScale: document.getElementById("weightMinScale"),
+      weightMidScale: document.getElementById("weightMidScale"),
+      weightMaxScale: document.getElementById("weightMaxScale"),
       angularMomentumRange: document.getElementById("angularMomentumRange"),
       angularMomentumNumber: document.getElementById("angularMomentumNumber"),
       angularMomentumMinScale: document.getElementById("angularMomentumMinScale"),
@@ -2100,7 +2144,7 @@
       aoaRangeValue: document.getElementById("aoaRangeValue"),
       axialFlowValue: document.getElementById("axialFlowValue"),
       pitchValue: document.getElementById("pitchValue"),
-      spuuPitchLimitValue: document.getElementById("spuuPitchLimitValue"),
+      pitchLimitValue: document.getElementById("pitchLimitValue"),
       mainRotorThrustValue: document.getElementById("mainRotorThrustValue"),
       helicopterWeightValue: document.getElementById("helicopterWeightValue"),
       msaAltitudeValue: document.getElementById("msaAltitudeValue"),
@@ -2142,6 +2186,41 @@
 
     function finiteOr(value, fallback) {
       return Number.isFinite(value) ? value : fallback;
+    }
+
+    function selectAircraft(aircraftKey) {
+      const nextConfig = AIRCRAFT_CONFIGS[aircraftKey];
+      if (!nextConfig) return;
+      MODEL_CONFIG = nextConfig;
+      state.aircraftKey = aircraftKey;
+      TOTAL_ENGINE_POWER_W =
+        MODEL_CONFIG.enginePowerShaftHp * MODEL_CONFIG.wattsPerShaftHorsepower;
+      MAIN_ROTOR_OMEGA_RAD_S =
+        MODEL_CONFIG.mainRotorRpm * 2 * Math.PI / 60;
+      DEFAULT_INDUCED_VELOCITY = Math.sqrt(
+        MODEL_CONFIG.nominalTailThrustEstimateN /
+        (2 * MODEL_CONFIG.seaLevelAirDensityKgM3 * TAIL_DISK_AREA)
+      );
+      state.helicopterWeightKg = MODEL_CONFIG.defaultWeightKg;
+      state.yawInertiaKgM2 = MODEL_CONFIG.yawInertiaKgM2;
+      state.tailRotorInducedVelocityMps = DEFAULT_INDUCED_VELOCITY;
+      state.nominalTrim = calibrateNominalTrim();
+
+      const minT = MODEL_CONFIG.minHelicopterWeightKg / 1000;
+      const maxT = MODEL_CONFIG.maxHelicopterWeightKg / 1000;
+      elements.weightRange.min = minT.toFixed(3);
+      elements.weightRange.max = maxT.toFixed(3);
+      elements.weightNumber.min = minT.toFixed(3);
+      elements.weightNumber.max = maxT.toFixed(3);
+      elements.weightMinScale.textContent = minT.toFixed(1).replace(".", ",");
+      elements.weightMidScale.textContent = ((minT + maxT) / 2).toFixed(1).replace(".", ",");
+      elements.weightMaxScale.textContent = `${maxT.toFixed(1).replace(".", ",")} t`;
+      elements.aircraftSelect.value = aircraftKey;
+      elements.aircraftRole.innerHTML =
+        `<span>${MODEL_CONFIG.role}</span><span>Common H-1 platform</span>`;
+      elements.svgTitle.textContent =
+        `Top-down yaw simulation of a ${MODEL_CONFIG.designation}`;
+      resetSimulation();
     }
 
     function yawInertiaBoundsForWeight(weightKg = state.helicopterWeightKg) {
@@ -2226,36 +2305,7 @@
     }
 
     function tailRotorPitchLimitAtConditions(msaAltitudeM, airTemperatureC) {
-      const config = MODEL_CONFIG;
-      const atmosphere = atmosphereAtMsaAltitudeAndTemperature(
-        msaAltitudeM,
-        airTemperatureC
-      );
-      const availableTravelPercent = clamp(
-        config.spuu52ReferencePositionPercent +
-        config.spuu52TemperatureGainPercentPerC *
-          (
-            atmosphere.temperatureC -
-            config.spuu52ReferenceTemperatureC
-          ) +
-        config.spuu52PressureGainPercentPerMmHg *
-          (
-            config.standardSeaLevelPressureMmHg -
-            atmosphere.pressureMmHg
-          ),
-        0,
-        100
-      );
-      const exactLimit =
-        config.spuu52MinLimitedPitchDeg +
-        availableTravelPercent / 100 *
-        (
-          config.tailRotorPhysicalMaxPitchDeg -
-          config.spuu52MinLimitedPitchDeg
-        );
-
-      // Keep the UI's 0.1° command steps on or below the physical limit.
-      return Math.floor((exactLimit + 1e-9) * 10) / 10;
+      return MODEL_CONFIG.tailRotorPhysicalMaxPitchDeg;
     }
 
     function currentTailRotorPitchLimitDeg() {
@@ -2335,7 +2385,7 @@
       );
 
       // Above the 10 m/s RLE scale, continue the final measured trend until
-      // the upper edge of the Mi-8 axial-to-oblique-flow transition (40 km/h).
+      // the upper edge of the generic axial-to-oblique-flow transition.
       // Beyond that point this hover model holds the transition value; the
       // tail rotor still uses full relative-flow blade-element aerodynamics.
       return lastCorrectionKg +
@@ -3810,8 +3860,8 @@
       elements.pitchValue.textContent =
         `${(currentTailRotorPitchRadians() * RAD).toFixed(1)}°`;
       const pitchLimitDeg = currentTailRotorPitchLimitDeg();
-      elements.spuuPitchLimitValue.textContent = `${pitchLimitDeg.toFixed(1)}°`;
-      elements.spuuPitchLimitValue.classList.toggle(
+      elements.pitchLimitValue.textContent = `${pitchLimitDeg.toFixed(1)}°`;
+      elements.pitchLimitValue.classList.toggle(
         "amber",
         state.tailRotorPitchDegrees >= pitchLimitDeg - 0.05
       );
@@ -3828,11 +3878,11 @@
       elements.availableEnginePowerValue.textContent =
         `${Math.round(
           model.maximumAvailableEnginePowerW /
-          MODEL_CONFIG.metricHorsepowerWatts
-        ).toLocaleString("en-US")} k.s.`;
+          MODEL_CONFIG.wattsPerShaftHorsepower
+        ).toLocaleString("en-US")} shp`;
       elements.powerSplitValue.textContent =
-        `${Math.round(model.mainRotorPowerW / MODEL_CONFIG.metricHorsepowerWatts).toLocaleString("en-US")} / ` +
-        `${Math.round(model.tailRotorPowerW / MODEL_CONFIG.metricHorsepowerWatts).toLocaleString("en-US")} k.s.`;
+        `${Math.round(model.mainRotorPowerW / MODEL_CONFIG.wattsPerShaftHorsepower).toLocaleString("en-US")} / ` +
+        `${Math.round(model.tailRotorPowerW / MODEL_CONFIG.wattsPerShaftHorsepower).toLocaleString("en-US")} shp`;
       elements.rotorEfficiencyValue.textContent =
         `${model.mainRotor.figureOfMerit.toFixed(2)} / ` +
         `${model.tail.figureOfMerit.toFixed(2)} FM`;
@@ -3848,7 +3898,7 @@
       elements.lteTelemetryValue.classList.toggle("blue", lte.state === "normal");
       elements.lteTelemetryValue.classList.toggle("red", lte.state === "lte");
       elements.ogeActualCorrectionValue.textContent =
-        `${model.ogeWind.relativeLabel} · ` +
+        `Not modelled · ` +
         formatOgeCorrection(
           model.ogeWind.appliedCorrectionKg,
           model.ogeWind.actualPowerDeltaW
@@ -3866,11 +3916,11 @@
         elements.accessibleSummary.textContent =
           `Yaw rate ${yaw.magnitude.toFixed(1)} degrees per second ${yaw.word}. ` +
           `The helicopter is ${verticalRate.word} at ${verticalRate.magnitude.toFixed(1)} meters per second. ` +
-          `Helicopter weight ${(state.helicopterWeightKg / 1000).toFixed(1)} metric tonnes. ` +
+          `Aircraft ${MODEL_CONFIG.designation}. Helicopter weight ${(state.helicopterWeightKg / 1000).toFixed(1)} metric tonnes. ` +
           `Yaw moment of inertia ${Math.round(state.yawInertiaKgM2)} kilogram square meters. ` +
           `MSA altitude ${Math.round(state.msaAltitudeM)} meters. ` +
           `Outside air temperature ${state.airTemperatureC.toFixed(1)} degrees Celsius. ` +
-          `SPUU-52 maximum tail-rotor pitch ${pitchLimitDeg.toFixed(1)} degrees. ` +
+          `Model maximum tail-rotor pitch ${pitchLimitDeg.toFixed(1)} degrees. ` +
            `Air density ${model.airDensityKgM3.toFixed(3)} kilograms per cubic meter. ` +
           `Applied OGE wind correction ${Math.round(model.ogeWind.appliedCorrectionKg)} kilograms. ` +
           `Actual tail-rotor thrust ${Math.round(model.tail.thrustN)} newtons. ` +
@@ -3888,14 +3938,14 @@
       elements.pedalRange.setAttribute("aria-valuemax", formattedLimit);
       elements.pedalRange.setAttribute(
         "aria-label",
-        `Tail-rotor pitch from minus six to the SPUU-52 limit of ${formattedLimit} degrees`
+        `Estimated tail-rotor pitch from ${MODEL_CONFIG.tailRotorMinPitchDeg} to ${formattedLimit} degrees`
       );
       elements.pedalNumber.setAttribute(
         "aria-label",
-        `Tail-rotor blade pitch in degrees; SPUU-52 maximum ${formattedLimit} degrees`
+        `Estimated tail-rotor blade pitch in degrees; model maximum ${formattedLimit} degrees`
       );
       elements.pitchLimitScale.textContent =
-        `SPUU-52 max ${formattedLimit}°`;
+        `Model max ${formattedLimit}°`;
       elements.pedalRange.value = state.tailRotorPitchDegrees.toFixed(1);
       elements.pedalNumber.value = state.tailRotorPitchDegrees.toFixed(1);
     }
@@ -4110,6 +4160,10 @@
       enableRangePointerDrag(elements.airTemperatureRange);
       enableRangePointerDrag(elements.windSpeedRange);
       enableRangePointerDrag(elements.windDirectionRange);
+
+      elements.aircraftSelect.addEventListener("change", () => {
+        selectAircraft(elements.aircraftSelect.value);
+      });
 
       bindPair(elements.pedalRange, elements.pedalNumber, {
         min: MODEL_CONFIG.tailRotorMinPitchDeg,
@@ -4402,6 +4456,7 @@
       state.enginePowerPercent = hoverTrim.powerPercent;
       state.tailRotorPitchDegrees = hoverTrim.pitchDegrees;
       bindControls();
+      selectAircraft(state.aircraftKey);
       updateControlUi();
       updatePauseUi();
       state.latest = calculateModel();
