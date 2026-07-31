@@ -10,7 +10,7 @@
 
 ## 2. Zásady převodu na H-1
 
-1. Parametry specifické pro Mi-8/Mi-171 se nesmějí potichu přenést na H-1.
+1. Parametry původního typu se nesmějí potichu přenést na H-1.
 2. Veřejně doložené údaje, inženýrské odhady a čistě didaktické konstanty musí být rozlišeny.
 3. Chybějící H-1 tabulka se nahrazuje neutrální hodnotou, ne tabulkou jiného typu.
 4. Přepnutí varianty musí přepočítat výkonové konstanty, kalibraci, trim, hmotnost a moment setrvačnosti.
@@ -74,7 +74,7 @@ Do výsledného momentu vstupuje reakční moment hlavního rotoru, síla ocasn�
 
 ### OGE vítr
 
-Všechny křivky `OGE_WIND_NOMOGRAM` jsou nulové. Vítr nadále ovlivňuje ocasní rotor a boční moment trupu, ale nemění mezní hmotnost visu. Jde o záměrnou ochranu proti chybnému použití nomogramu Mi-8 na H-1.
+Všechny křivky `OGE_WIND_NOMOGRAM` jsou nulové. Vítr nadále ovlivňuje ocasní rotor a boční moment trupu, ale nemění mezní hmotnost visu. Jde o záměrnou ochranu proti použití nomogramu jiného typu na H-1.
 
 ## 5. Přepínání varianty
 
@@ -92,7 +92,7 @@ Tím se zabrání tomu, aby po změně typu zůstala kalibrace nebo neplatná hm
 ## 6. Akceptační kritéria
 
 - dokument je validní HTML a JavaScript projde syntaktickou kontrolou;
-- v kódu ani viditelném rozhraní nezůstane SPUU-52 nebo Mi-17 konfigurace;
+- v kódu ani viditelném rozhraní nezůstane konfigurace původního typu;
 - hlavní rotor má čtyři vykreslené listy;
 - volba varianty obsahuje právě UH-1Y a AH-1Z;
 - každá varianta po výběru vytvoří konečný numerický trim bez výjimky;
