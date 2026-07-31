@@ -1,0 +1,4418 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An educational, single-file visualization of helicopter yaw, directional pedals, wind, and tail-rotor aerodynamics.">
+  <title>Tail Rotor Lab</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #081116;
+      --bg-soft: #0d1a21;
+      --panel: rgba(16, 31, 39, 0.88);
+      --panel-strong: #12252e;
+      --panel-hover: #18313b;
+      --line: #29444e;
+      --line-soft: rgba(111, 151, 163, 0.2);
+      --text: #e8f2f4;
+      --muted: #96abb2;
+      --teal: #58d7c4;
+      --teal-soft: rgba(88, 215, 196, 0.14);
+      --cyan: #65c9f0;
+      --blue: #72a7ff;
+      --amber: #f2bd68;
+      --magenta: #ed70a9;
+      --green: #64d59a;
+      --red: #ff7a85;
+      --shadow: 0 22px 70px rgba(0, 0, 0, 0.24);
+      --radius-lg: 22px;
+      --radius-md: 14px;
+      --radius-sm: 9px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    html {
+      min-width: 320px;
+      background: var(--bg);
+    }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% -10%, rgba(38, 117, 120, 0.22), transparent 34rem),
+        radial-gradient(circle at 85% 20%, rgba(41, 84, 112, 0.15), transparent 34rem),
+        linear-gradient(180deg, #0a151b 0%, var(--bg) 48%, #071014 100%);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      touch-action: manipulation;
+    }
+
+    input[type="range"] {
+      touch-action: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 3px solid rgba(88, 215, 196, 0.34);
+      outline-offset: 2px;
+    }
+
+    .app {
+      width: min(1600px, 100%);
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 14px;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .brand:focus-visible {
+      outline: 2px solid var(--teal);
+      outline-offset: 5px;
+      border-radius: 8px;
+    }
+
+    .brand-mark {
+      position: relative;
+      width: 46px;
+      height: 46px;
+      flex: 0 0 46px;
+      border: 1px solid rgba(88, 215, 196, 0.3);
+      border-radius: 50%;
+      background: var(--teal-soft);
+      box-shadow: inset 0 0 0 6px rgba(88, 215, 196, 0.04);
+    }
+
+    .brand-mark::before,
+    .brand-mark::after {
+      position: absolute;
+      top: 21px;
+      left: 7px;
+      width: 30px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--teal);
+      content: "";
+    }
+
+    .brand-mark::after {
+      transform: rotate(90deg);
+    }
+
+    .brand-mark span {
+      position: absolute;
+      inset: 18px;
+      border: 2px solid var(--teal);
+      border-radius: 50%;
+      background: var(--bg);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.35rem, 2.5vw, 2rem);
+      font-weight: 650;
+      letter-spacing: -0.035em;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .header-actions {
+      display: flex;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-actions .button {
+      min-width: 86px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(250px, 310px) minmax(460px, 634px) minmax(270px, 320px);
+      gap: 16px;
+      align-items: stretch;
+      justify-content: center;
+    }
+
+    .panel {
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, rgba(18, 37, 46, 0.9), rgba(12, 26, 33, 0.94));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .panel-section {
+      padding: 20px;
+    }
+
+    .panel-section + .panel-section {
+      border-top: 1px solid var(--line-soft);
+    }
+
+    .section-kicker {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .control {
+      margin-bottom: 22px;
+      transition: opacity 160ms ease, filter 160ms ease;
+    }
+
+    .control:last-child {
+      margin-bottom: 0;
+    }
+
+    .controls-panel[data-inputs-locked="true"] .control:not(.pedal-control) {
+      opacity: 0.42;
+      filter: grayscale(0.75);
+    }
+
+    .controls-panel[data-inputs-locked="true"] .control:not(.pedal-control) input,
+    .controls-panel[data-inputs-locked="true"] .control:not(.pedal-control) .compass-control {
+      cursor: not-allowed;
+    }
+
+    input:disabled {
+      cursor: not-allowed;
+    }
+
+    .control-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 9px;
+    }
+
+    .control label,
+    .control-title {
+      color: var(--text);
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .field-value {
+      display: flex;
+      align-items: center;
+      flex: 0 0 auto;
+      gap: 6px;
+    }
+
+    .number-input {
+      width: 72px;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+      background: rgba(5, 15, 20, 0.55);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .number-input:hover {
+      border-color: #40606c;
+    }
+
+    .unit {
+      min-width: 30px;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 28px;
+      margin: 0;
+      appearance: none;
+      background: transparent;
+      cursor: ew-resize;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--teal), var(--line));
+    }
+
+    input[type="range"]::-moz-range-track {
+      height: 4px;
+      border-radius: 999px;
+      background: var(--line);
+    }
+
+    input[type="range"]::-moz-range-progress {
+      height: 4px;
+      border-radius: 999px;
+      background: var(--teal);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      width: 18px;
+      height: 18px;
+      margin-top: -7px;
+      appearance: none;
+      border: 3px solid #0d2027;
+      border-radius: 50%;
+      background: var(--teal);
+      box-shadow: 0 0 0 1px var(--teal), 0 0 16px rgba(88, 215, 196, 0.25);
+      cursor: ew-resize;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border: 3px solid #0d2027;
+      border-radius: 50%;
+      background: var(--teal);
+      box-shadow: 0 0 0 1px var(--teal);
+      cursor: ew-resize;
+    }
+
+    .scale {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2px;
+      color: #6f858d;
+      font-size: 0.68rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .compass-control {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr);
+      gap: 13px;
+      align-items: center;
+    }
+
+    .compass {
+      position: relative;
+      width: 74px;
+      height: 74px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background:
+        linear-gradient(90deg, transparent 49%, rgba(111, 151, 163, 0.22) 49%, rgba(111, 151, 163, 0.22) 51%, transparent 51%),
+        linear-gradient(0deg, transparent 49%, rgba(111, 151, 163, 0.22) 49%, rgba(111, 151, 163, 0.22) 51%, transparent 51%),
+        rgba(5, 15, 20, 0.36);
+    }
+
+    .compass::after {
+      position: absolute;
+      inset: 29px;
+      border: 2px solid var(--cyan);
+      border-radius: 50%;
+      background: var(--bg-soft);
+      content: "";
+    }
+
+    .compass-n {
+      position: absolute;
+      top: 4px;
+      left: 50%;
+      color: var(--muted);
+      font-size: 0.58rem;
+      transform: translateX(-50%);
+    }
+
+    .compass-arrow {
+      position: absolute;
+      z-index: 1;
+      top: 9px;
+      left: 35px;
+      width: 4px;
+      height: 27px;
+      border-radius: 999px;
+      background: var(--cyan);
+      transform: rotate(0deg);
+      transform-origin: 2px 28px;
+      box-shadow: 0 0 12px rgba(101, 201, 240, 0.35);
+    }
+
+    .compass-arrow::before {
+      position: absolute;
+      bottom: -2px;
+      left: -4px;
+      width: 0;
+      height: 0;
+      border-right: 6px solid transparent;
+      border-top: 9px solid var(--cyan);
+      border-left: 6px solid transparent;
+      content: "";
+    }
+
+    .direction-readout {
+      margin-bottom: 7px;
+      color: var(--cyan);
+      font-size: 0.78rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .button {
+      min-height: 44px;
+      padding: 10px 13px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--text);
+      background: var(--panel-strong);
+      cursor: pointer;
+      transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+    }
+
+    .button:hover {
+      border-color: #456672;
+      background: var(--panel-hover);
+    }
+
+    .button:active {
+      transform: translateY(1px);
+    }
+
+    .button.primary {
+      border-color: rgba(88, 215, 196, 0.35);
+      color: #dffcf7;
+      background: rgba(37, 121, 112, 0.34);
+    }
+
+    .simulation-panel {
+      position: relative;
+      display: flex;
+      min-height: 0;
+      align-self: start;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .simulation-controls-grid {
+      display: grid;
+      min-height: 0;
+      grid-template-columns: minmax(0, 1fr) 92px;
+      grid-template-rows: auto auto;
+    }
+
+    .simulation-topbar {
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 13px 16px 5px;
+    }
+
+    .sim-label {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 30px;
+      padding: 6px 11px;
+      border: 1px solid rgba(100, 213, 154, 0.25);
+      border-radius: 999px;
+      color: var(--green);
+      background: rgba(100, 213, 154, 0.08);
+      font-size: 0.76rem;
+      font-weight: 650;
+    }
+
+    .status-pill::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      content: "";
+      box-shadow: 0 0 10px currentColor;
+    }
+
+    .status-pill[data-state="active"] {
+      border-color: rgba(237, 112, 169, 0.28);
+      color: var(--magenta);
+      background: rgba(237, 112, 169, 0.08);
+    }
+
+    .status-pill[data-state="paused"] {
+      border-color: rgba(242, 189, 104, 0.25);
+      color: var(--amber);
+      background: rgba(242, 189, 104, 0.08);
+    }
+
+    .status-pill[data-state="lte"] {
+      border-color: rgba(255, 122, 133, 0.38);
+      color: var(--red);
+      background: rgba(255, 122, 133, 0.1);
+    }
+
+    .simulation-stage {
+      position: relative;
+      display: grid;
+      min-height: 0;
+      place-items: center;
+      padding: 0 6px 4px;
+    }
+
+    #simulationSvg {
+      display: block;
+      width: min(100%, 540px);
+      height: auto;
+      overflow: visible;
+    }
+
+    .simulation-control {
+      margin: 0;
+      transition: opacity 160ms ease, filter 160ms ease;
+    }
+
+    .pedal-dock {
+      padding: 10px 16px 12px;
+      border-top: 1px solid var(--line-soft);
+      background: rgba(7, 18, 24, 0.48);
+    }
+
+    .pedal-dock .control-head {
+      margin-bottom: 5px;
+    }
+
+    .power-rail {
+      display: flex;
+      grid-row: 1 / span 2;
+      grid-column: 2;
+      align-items: center;
+      flex-direction: column;
+      padding: 10px 10px 12px;
+      border-left: 1px solid var(--line-soft);
+      background: rgba(7, 18, 24, 0.48);
+    }
+
+    .power-rail .control-head {
+      width: 100%;
+      align-items: center;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 3px;
+    }
+
+    .power-rail .field-value {
+      gap: 3px;
+    }
+
+    .power-rail .number-input {
+      width: 54px;
+      padding-inline: 5px;
+    }
+
+    .power-rail .unit {
+      min-width: 14px;
+    }
+
+    .vertical-control-body {
+      display: grid;
+      min-height: 210px;
+      width: 100%;
+      flex: 1;
+      grid-template-columns: minmax(30px, 1fr) auto;
+      gap: 7px;
+      align-items: stretch;
+    }
+
+    .vertical-range-wrap {
+      display: grid;
+      place-items: center;
+      padding: 8px 0;
+    }
+
+    .power-rail input[type="range"] {
+      width: 30px;
+      height: 100%;
+      min-height: 190px;
+      direction: rtl;
+      writing-mode: vertical-lr;
+      cursor: ns-resize;
+      touch-action: none;
+    }
+
+    .power-rail input[type="range"]::-webkit-slider-runnable-track {
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(0deg, var(--teal), var(--line));
+    }
+
+    .power-rail input[type="range"]::-moz-range-track {
+      width: 4px;
+      height: 100%;
+    }
+
+    .power-rail input[type="range"]::-moz-range-progress {
+      width: 4px;
+      height: auto;
+    }
+
+    .power-rail input[type="range"]::-webkit-slider-thumb {
+      margin-top: 0;
+      margin-left: -7px;
+      cursor: ns-resize;
+    }
+
+    .power-rail input[type="range"]::-moz-range-thumb {
+      cursor: ns-resize;
+    }
+
+    .vertical-scale {
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 190px;
+      margin: 8px 0;
+    }
+
+    .lte-chart-section {
+      padding: 18px 20px 16px;
+      border-top: 1px solid var(--line-soft);
+      background: rgba(7, 18, 24, 0.62);
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .chart-title {
+      margin: 0;
+      color: var(--text);
+      font-size: 0.86rem;
+      font-weight: 650;
+    }
+
+    .chart-subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.69rem;
+      line-height: 1.4;
+    }
+
+    .lte-state {
+      display: inline-flex;
+      align-items: center;
+      flex: 0 0 auto;
+      gap: 7px;
+      padding: 6px 9px;
+      border: 1px solid rgba(100, 213, 154, 0.24);
+      border-radius: 999px;
+      color: var(--green);
+      background: rgba(100, 213, 154, 0.07);
+      font-size: 0.68rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .lte-state::before {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      content: "";
+    }
+
+    .lte-state[data-state="onset"] {
+      border-color: rgba(242, 189, 104, 0.28);
+      color: var(--amber);
+      background: rgba(242, 189, 104, 0.08);
+    }
+
+    .lte-state[data-state="lte"] {
+      border-color: rgba(255, 122, 133, 0.35);
+      color: var(--red);
+      background: rgba(255, 122, 133, 0.09);
+    }
+
+    .lte-chart {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    .chart-grid-line {
+      stroke: rgba(117, 154, 165, 0.15);
+      stroke-width: 1;
+    }
+
+    .chart-axis {
+      stroke: rgba(166, 193, 200, 0.46);
+      stroke-width: 1.2;
+    }
+
+    .chart-tick {
+      fill: #718b94;
+      font-size: 10px;
+    }
+
+    .chart-axis-label {
+      fill: #91a8af;
+      font-size: 10px;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+    }
+
+    .chart-lte-region {
+      fill: rgba(255, 122, 133, 0.055);
+    }
+
+    .chart-critical-line {
+      stroke: var(--red);
+      stroke-width: 1.5;
+      stroke-dasharray: 5 5;
+    }
+
+    .chart-critical-label {
+      fill: var(--red);
+      font-size: 10px;
+      font-weight: 650;
+    }
+
+    .chart-curve {
+      fill: none;
+      stroke: var(--teal);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 5px rgba(88, 215, 196, 0.22));
+    }
+
+    .chart-guide {
+      stroke: rgba(232, 242, 244, 0.25);
+      stroke-width: 1;
+      stroke-dasharray: 3 4;
+    }
+
+    .chart-point {
+      fill: var(--teal);
+      stroke: #e8f2f4;
+      stroke-width: 2.5;
+      filter: drop-shadow(0 0 6px rgba(88, 215, 196, 0.45));
+    }
+
+    .chart-point.lte {
+      fill: var(--red);
+      filter: drop-shadow(0 0 7px rgba(255, 122, 133, 0.5));
+    }
+
+    .chart-current-label {
+      fill: #d9e7e9;
+      font-size: 10px;
+      font-weight: 650;
+    }
+
+    .chart-note {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 1px;
+      color: var(--muted);
+      font-size: 0.65rem;
+      line-height: 1.4;
+    }
+
+    .telemetry-panel {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hero-readout {
+      padding: 20px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .hero-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .direction-tag {
+      padding: 3px 7px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--magenta);
+      font-size: 0.67rem;
+      letter-spacing: 0.08em;
+    }
+
+    .hero-value {
+      color: var(--text);
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 680;
+      letter-spacing: -0.055em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hero-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line-soft);
+    }
+
+    .hero-heading-label {
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .hero-heading-value {
+      color: var(--text);
+      font-size: 1.05rem;
+      font-weight: 680;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hero-unit {
+      margin-left: 6px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .telemetry-item {
+      min-width: 0;
+      padding: 15px 16px;
+      border-right: 1px solid var(--line-soft);
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .telemetry-item:nth-child(2n) {
+      border-right: 0;
+    }
+
+    .telemetry-item:nth-last-child(-n + 2) {
+      border-bottom: 0;
+    }
+
+    .telemetry-label {
+      display: block;
+      min-height: 2.4em;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 0.68rem;
+      line-height: 1.2;
+    }
+
+    .telemetry-value {
+      display: block;
+      overflow: hidden;
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .telemetry-value.blue {
+      color: var(--blue);
+    }
+
+    .telemetry-value.amber {
+      color: var(--amber);
+    }
+
+    .telemetry-value.red {
+      color: var(--red);
+    }
+
+    .oge-summary {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding: 10px 11px;
+      border: 1px solid rgba(88, 215, 196, 0.18);
+      border-radius: 9px;
+      background: rgba(88, 215, 196, 0.055);
+    }
+
+    .oge-summary-label {
+      color: var(--muted);
+      font-size: 0.68rem;
+      line-height: 1.4;
+    }
+
+    .oge-summary-value {
+      color: var(--teal);
+      font-size: 0.78rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .moment-list {
+      display: grid;
+      gap: 11px;
+      margin: 0;
+    }
+
+    .moment-row {
+      display: grid;
+      grid-template-columns: 9px minmax(0, 1fr) auto;
+      gap: 9px;
+      align-items: center;
+      font-size: 0.75rem;
+    }
+
+    .moment-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .moment-dot.amber {
+      background: var(--amber);
+    }
+
+    .moment-dot.blue {
+      background: var(--blue);
+    }
+
+    .moment-dot.cyan {
+      background: var(--cyan);
+    }
+
+    .moment-dot.magenta {
+      background: var(--magenta);
+    }
+
+    .moment-name {
+      overflow: hidden;
+      color: var(--muted);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .moment-value {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .explanation {
+      margin-top: auto;
+    }
+
+    .explanation-text {
+      margin: 0;
+      color: #c9d7da;
+      font-size: 0.79rem;
+      line-height: 1.55;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 13px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.67rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-line {
+      width: 16px;
+      height: 2px;
+      background: var(--blue);
+    }
+
+    .legend-line.wind {
+      background: var(--cyan);
+    }
+
+    .app-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 4px 0;
+      color: #71868e;
+      font-size: 0.7rem;
+      line-height: 1.5;
+    }
+
+    .app-footer p {
+      max-width: 850px;
+      margin: 0;
+    }
+
+    .app-footer-copy {
+      display: grid;
+      gap: 4px;
+    }
+
+    .app-footer a {
+      color: var(--teal);
+      text-underline-offset: 3px;
+    }
+
+    .app-footer a:hover {
+      color: #8be6d8;
+    }
+
+    .error-banner {
+      display: none;
+      margin-bottom: 16px;
+      padding: 12px 15px;
+      border: 1px solid rgba(255, 122, 133, 0.35);
+      border-radius: 11px;
+      color: #ffd8dc;
+      background: rgba(255, 122, 133, 0.1);
+      font-size: 0.82rem;
+    }
+
+    .error-banner.visible {
+      display: block;
+    }
+
+    /* SVG */
+    .grid-ring {
+      fill: none;
+      stroke: rgba(115, 156, 168, 0.14);
+      stroke-width: 1;
+    }
+
+    .grid-line {
+      stroke: rgba(115, 156, 168, 0.1);
+      stroke-width: 1;
+    }
+
+    .compass-label-svg {
+      fill: #6e858d;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+    }
+
+    .wind-arrow {
+      stroke: var(--cyan);
+      stroke-width: 4;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 7px rgba(101, 201, 240, 0.28));
+    }
+
+    .wind-label-svg {
+      fill: #a9c7d0;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .wind-sub-svg {
+      fill: #6f8e99;
+      font-size: 10px;
+    }
+
+    .rotor-disk {
+      fill: rgba(109, 169, 180, 0.035);
+      stroke: rgba(127, 177, 187, 0.2);
+      stroke-width: 1;
+      stroke-dasharray: 7 8;
+    }
+
+    .rotor-blade {
+      fill: url(#rotorBladeGradient);
+      stroke: rgba(157, 200, 207, 0.38);
+      stroke-width: 1;
+    }
+
+    .rotor-hub {
+      fill: #d2e1e4;
+      stroke: #16303a;
+      stroke-width: 5;
+    }
+
+    .body-main {
+      fill: url(#bodyGradient);
+      stroke: #617b84;
+      stroke-width: 1.5;
+      filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.28));
+    }
+
+    .body-window {
+      fill: #24444f;
+      stroke: #75909a;
+      stroke-width: 1;
+    }
+
+    .body-centerline {
+      stroke: rgba(203, 224, 228, 0.22);
+      stroke-width: 1;
+    }
+
+    .tail-boom {
+      fill: url(#tailGradient);
+      stroke: #57717a;
+      stroke-width: 1.2;
+    }
+
+    .stabilizer {
+      fill: #304a54;
+      stroke: #617b84;
+      stroke-width: 1;
+    }
+
+    .cog-ring {
+      fill: rgba(88, 215, 196, 0.1);
+      stroke: var(--teal);
+      stroke-width: 1.5;
+    }
+
+    .cog-cross {
+      stroke: var(--teal);
+      stroke-width: 1.5;
+    }
+
+    .thrust-actual {
+      stroke: var(--blue);
+      stroke-width: 5;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 7px rgba(114, 167, 255, 0.32));
+    }
+
+    .torque-arc {
+      fill: none;
+      stroke: var(--amber);
+      stroke-width: 3;
+      stroke-linecap: round;
+      opacity: 0.82;
+    }
+
+    .net-arc {
+      fill: none;
+      stroke: var(--magenta);
+      stroke-width: 4;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 7px rgba(237, 112, 169, 0.3));
+    }
+
+    .svg-label {
+      fill: #c2d2d6;
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .svg-muted {
+      fill: #718b94;
+      font-size: 9px;
+    }
+
+    .vertical-rate-readout rect {
+      fill: rgba(9, 24, 30, 0.88);
+      stroke: rgba(115, 156, 168, 0.26);
+      stroke-width: 1;
+    }
+
+    .vertical-rate-arrow {
+      fill: none;
+      stroke: var(--teal);
+      stroke-width: 2.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .vertical-rate-readout[data-state="descent"] .vertical-rate-arrow {
+      stroke: var(--amber);
+    }
+
+    .vertical-rate-title {
+      fill: #718b94;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+    }
+
+    .vertical-rate-value {
+      fill: #d4e3e6;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 1180px) {
+      .workspace {
+        grid-template-columns: minmax(250px, 310px) minmax(430px, 634px);
+      }
+
+      .telemetry-panel {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: 1.1fr 2fr 1.4fr;
+      }
+
+      .hero-readout {
+        border-right: 1px solid var(--line-soft);
+        border-bottom: 0;
+      }
+
+      .telemetry-grid {
+        border-right: 1px solid var(--line-soft);
+        border-bottom: 0;
+      }
+
+      .explanation {
+        margin-top: 0;
+      }
+    }
+
+    @media (max-width: 790px) {
+      .app {
+        padding: 14px;
+      }
+
+      .app-header {
+        align-items: flex-start;
+      }
+
+      .subtitle {
+        max-width: 36rem;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .simulation-panel {
+        grid-row: 1;
+      }
+
+      .controls-panel {
+        grid-row: 2;
+      }
+
+      .telemetry-panel {
+        grid-row: 3;
+        grid-column: auto;
+        display: flex;
+      }
+
+      .hero-readout {
+        border-right: 0;
+        border-bottom: 1px solid var(--line-soft);
+      }
+
+      .telemetry-grid {
+        border-right: 0;
+        border-bottom: 1px solid var(--line-soft);
+      }
+
+      .simulation-controls-grid {
+        grid-template-columns: minmax(0, 1fr) 86px;
+      }
+
+      .app-footer {
+        flex-direction: column;
+        gap: 6px;
+      }
+    }
+
+    @media (max-width: 460px) {
+      .app {
+        padding: 9px;
+      }
+
+      .app-header {
+        gap: 8px;
+        margin: 7px 4px 14px;
+      }
+
+      .brand-mark {
+        width: 40px;
+        height: 40px;
+        flex-basis: 40px;
+      }
+
+      .brand-mark::before,
+      .brand-mark::after {
+        top: 19px;
+        left: 6px;
+        width: 28px;
+      }
+
+      .brand-mark span {
+        inset: 15px;
+      }
+
+      .subtitle {
+        display: none;
+      }
+
+      .header-actions {
+        gap: 6px;
+      }
+
+      .header-actions .button {
+        min-width: 0;
+        min-height: 40px;
+        padding: 8px 10px;
+        font-size: 0.78rem;
+      }
+
+      .panel-section,
+      .hero-readout {
+        padding: 16px;
+      }
+
+      .simulation-controls-grid {
+        grid-template-columns: minmax(0, 1fr) 76px;
+      }
+
+      .pedal-dock {
+        padding: 9px 11px 11px;
+      }
+
+      .power-rail {
+        padding: 9px 6px 11px;
+      }
+
+      .power-rail .number-input {
+        width: 48px;
+        padding-inline: 4px;
+      }
+
+      .lte-chart-section {
+        padding: 15px 10px 13px;
+      }
+
+      .chart-header {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .lte-state {
+        align-self: flex-start;
+      }
+
+      .chart-note {
+        flex-direction: column;
+        gap: 3px;
+      }
+
+      .telemetry-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+
+      #mainRotorVisual {
+        transform: rotate(0deg) !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="app-header">
+      <a class="brand" href="https://github.com/vrabczak/TailRotorLab" aria-label="Tail Rotor Lab project homepage on GitHub">
+        <div class="brand-mark" aria-hidden="true"><span></span></div>
+        <div>
+          <h1>Tail Rotor Lab</h1>
+          <p class="subtitle">Explore how torque, wind, and yaw reshape tail-rotor thrust.</p>
+        </div>
+      </a>
+      <div class="header-actions" aria-label="Simulation controls">
+        <button id="pauseButton" class="button primary" type="button" aria-pressed="false">Start</button>
+        <button id="resetButton" class="button" type="button">Reset</button>
+      </div>
+    </header>
+
+    <div id="errorBanner" class="error-banner" role="alert">
+      The simulation encountered a numerical error and has been paused. Select Reset to recover.
+    </div>
+
+    <div class="workspace">
+      <aside class="panel controls-panel" aria-label="Simulation controls" data-inputs-locked="false">
+        <section class="panel-section" aria-labelledby="environmentHeading">
+          <h2 id="environmentHeading" class="section-kicker">Environment</h2>
+
+          <div class="control">
+            <div class="control-head">
+              <label for="windSpeedRange">Wind speed</label>
+              <div class="field-value">
+                <input id="windSpeedNumber" class="number-input" type="number" min="0" max="25" step="0.5" value="0" aria-label="Wind speed in meters per second">
+                <span class="unit">m/s</span>
+              </div>
+            </div>
+            <input id="windSpeedRange" type="range" min="0" max="25" step="0.5" value="0" aria-label="Wind speed in meters per second">
+            <div class="scale"><span>Calm</span><span>12.5</span><span>25</span></div>
+          </div>
+
+          <div class="control">
+            <div class="control-head">
+              <span class="control-title">Wind direction</span>
+              <div class="field-value">
+                <input id="windDirectionNumber" class="number-input" type="number" step="1" value="0" aria-label="Meteorological wind source direction in degrees">
+                <span class="unit">°</span>
+              </div>
+            </div>
+            <div class="compass-control">
+              <div class="compass" aria-hidden="true">
+                <span class="compass-n">N</span>
+                <span id="compassArrow" class="compass-arrow"></span>
+              </div>
+              <div>
+                <div id="directionReadout" class="direction-readout">000° N · wind from</div>
+                <label class="sr-only" for="windDirectionRange">Wind source direction</label>
+                <input id="windDirectionRange" type="range" min="0" max="359" step="1" value="0" aria-label="Wind source direction, zero north, ninety east">
+                <div class="scale"><span>N</span><span>E / S / W</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="control">
+            <div class="control-head">
+              <label for="msaAltitudeRange">Altitude</label>
+              <div class="field-value">
+                <input id="msaAltitudeNumber" class="number-input" type="number" min="0" max="6000" step="100" value="0" aria-label="MSA altitude above mean sea level in meters">
+                <span class="unit">m</span>
+              </div>
+            </div>
+            <input id="msaAltitudeRange" type="range" min="0" max="6000" step="100" value="0" aria-label="MSA altitude above mean sea level from zero to six thousand meters">
+            <div class="scale"><span>0</span><span>3 000</span><span>6 000 m</span></div>
+          </div>
+
+          <div class="control">
+            <div class="control-head">
+              <label for="airTemperatureRange">Temperature</label>
+              <div class="field-value">
+                <input id="airTemperatureNumber" class="number-input" type="number" min="-50" max="50" step="0.1" value="15.0" aria-label="Outside air temperature in degrees Celsius">
+                <span class="unit">&deg;C</span>
+              </div>
+            </div>
+            <input id="airTemperatureRange" type="range" min="-50" max="50" step="1" value="15" aria-label="Outside air temperature from minus fifty to plus fifty degrees Celsius">
+            <div class="scale"><span>&minus;50</span><span>0</span><span>+50 &deg;C</span></div>
+          </div>
+        </section>
+
+        <section class="panel-section" aria-labelledby="helicopterConfigurationHeading">
+          <h2 id="helicopterConfigurationHeading" class="section-kicker">Helicopter Configuration</h2>
+
+          <div class="control">
+            <div class="control-head">
+              <label for="weightRange">Weight</label>
+              <div class="field-value">
+                <input id="weightNumber" class="number-input" type="text" inputmode="decimal" value="13,0" aria-label="Helicopter weight in metric tonnes">
+                <span class="unit">t</span>
+              </div>
+            </div>
+            <input id="weightRange" type="range" min="9" max="13" step="0.1" value="13" aria-label="Helicopter weight from nine to thirteen metric tonnes">
+            <div class="scale"><span>9,0</span><span>11,0</span><span>13,0 t</span></div>
+          </div>
+
+          <div class="control">
+            <div class="control-head">
+              <label for="angularMomentumRange">Angular Momentum</label>
+              <div class="field-value">
+                <input id="angularMomentumNumber" class="number-input" type="number" min="80" max="160" step="0.1" value="120.0" aria-label="Simplified yaw moment of inertia in tonne square meters">
+                <span class="unit">t&middot;m&sup2;</span>
+              </div>
+            </div>
+            <input id="angularMomentumRange" type="range" min="80" max="160" step="1" value="120" aria-label="Simplified yaw moment of inertia in tonne square meters for the current helicopter weight">
+            <div class="scale">
+              <span id="angularMomentumMinScale">80</span>
+              <span id="angularMomentumMidScale">120</span>
+              <span id="angularMomentumMaxScale">160 t&middot;m&sup2;</span>
+            </div>
+          </div>
+        </section>
+
+      </aside>
+
+      <section class="panel simulation-panel" aria-label="Top-down helicopter simulation">
+        <div class="simulation-topbar">
+          <span class="sim-label">Top view · hover</span>
+          <span id="statusPill" class="status-pill" data-state="paused">Click Start button to start simulation</span>
+        </div>
+
+        <div class="simulation-controls-grid" aria-labelledby="flightControlsHeading">
+          <h2 id="flightControlsHeading" class="sr-only">Flight Controls</h2>
+
+          <div class="simulation-stage">
+            <svg id="simulationSvg" viewBox="50 40 660 540" role="img" aria-labelledby="svgTitle svgDescription">
+            <title id="svgTitle">Top-down yaw simulation of a Mi-17-class helicopter</title>
+            <desc id="svgDescription">A clockwise main rotor, body-fixed tail-rotor thrust vector, world-fixed wind vector, yaw moment indicators, and an estimated climb or descent rate update continuously.</desc>
+            <defs>
+              <linearGradient id="bodyGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#57717a"/>
+                <stop offset="0.45" stop-color="#3b5660"/>
+                <stop offset="1" stop-color="#243d47"/>
+              </linearGradient>
+              <linearGradient id="tailGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#47636d"/>
+                <stop offset="1" stop-color="#263f49"/>
+              </linearGradient>
+              <linearGradient id="rotorBladeGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#76909a" stop-opacity="0.12"/>
+                <stop offset="0.55" stop-color="#a7bdc2" stop-opacity="0.48"/>
+                <stop offset="1" stop-color="#d6e3e6" stop-opacity="0.18"/>
+              </linearGradient>
+              <marker id="arrowWind" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#65c9f0"></path>
+              </marker>
+              <marker id="arrowThrust" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#72a7ff"></path>
+              </marker>
+              <marker id="arrowAmber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#f2bd68"></path>
+              </marker>
+              <marker id="arrowMagenta" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#ed70a9"></path>
+              </marker>
+            </defs>
+
+            <g aria-hidden="true">
+              <circle class="grid-ring" cx="380" cy="310" r="250"></circle>
+              <circle class="grid-ring" cx="380" cy="310" r="190"></circle>
+              <circle class="grid-ring" cx="380" cy="310" r="125"></circle>
+              <line class="grid-line" x1="380" y1="65" x2="380" y2="555"></line>
+              <line class="grid-line" x1="80" y1="310" x2="680" y2="310"></line>
+              <text class="compass-label-svg" x="380" y="56" text-anchor="middle">N</text>
+              <text class="compass-label-svg" x="695" y="315" text-anchor="middle">E</text>
+              <text class="compass-label-svg" x="380" y="576" text-anchor="middle">S</text>
+              <text class="compass-label-svg" x="65" y="315" text-anchor="middle">W</text>
+            </g>
+
+            <g id="windVector" aria-hidden="true">
+              <line id="windLine" class="wind-arrow" x1="128" y1="114" x2="128" y2="114" marker-end="url(#arrowWind)"></line>
+              <text id="windLabel" class="wind-label-svg" x="128" y="66">Calm</text>
+              <text id="windSubLabel" class="wind-sub-svg" x="128" y="81">Wind from N</text>
+            </g>
+
+            <g id="torqueIndicators" aria-hidden="true">
+              <path id="mainTorqueArc" class="torque-arc" d="M 478 310 A 98 98 0 0 0 380 212" marker-end="url(#arrowAmber)"></path>
+              <text id="mainTorqueLabel" class="svg-muted" x="478" y="295" text-anchor="end">MAIN-ROTOR REACTION</text>
+              <path id="netArcCcw" class="net-arc" d="M 518 310 A 138 138 0 0 0 380 172" marker-end="url(#arrowMagenta)" opacity="0"></path>
+              <path id="netArcCw" class="net-arc" d="M 242 310 A 138 138 0 0 0 380 448" marker-end="url(#arrowMagenta)" opacity="0"></path>
+            </g>
+
+            <g id="helicopter" transform="translate(380 310)">
+              <g id="helicopterRotation">
+                <circle class="rotor-disk" cx="0" cy="0" r="174"></circle>
+
+                <g id="mainRotorVisual">
+                  <path class="rotor-blade" d="M 8 -8 C 70 -15, 128 -11, 170 -5 L 170 5 C 125 8, 68 12, 8 8 Z"></path>
+                  <path class="rotor-blade" transform="rotate(72)" d="M 8 -8 C 70 -15, 128 -11, 170 -5 L 170 5 C 125 8, 68 12, 8 8 Z"></path>
+                  <path class="rotor-blade" transform="rotate(144)" d="M 8 -8 C 70 -15, 128 -11, 170 -5 L 170 5 C 125 8, 68 12, 8 8 Z"></path>
+                  <path class="rotor-blade" transform="rotate(216)" d="M 8 -8 C 70 -15, 128 -11, 170 -5 L 170 5 C 125 8, 68 12, 8 8 Z"></path>
+                  <path class="rotor-blade" transform="rotate(288)" d="M 8 -8 C 70 -15, 128 -11, 170 -5 L 170 5 C 125 8, 68 12, 8 8 Z"></path>
+                </g>
+
+                <path class="tail-boom" d="M -13 46 L 13 46 L 7 151 L -7 151 Z"></path>
+                <path class="stabilizer" d="M -53 122 L 53 122 L 43 138 L -43 138 Z"></path>
+                <path class="body-main" d="M 0 -93 C 37 -89 55 -48 50 5 C 47 45 27 73 0 80 C -27 73 -47 45 -50 5 C -55 -48 -37 -89 0 -93 Z"></path>
+                <path class="body-window" d="M 0 -75 C 24 -70 32 -47 29 -24 C 15 -17 -15 -17 -29 -24 C -32 -47 -24 -70 0 -75 Z"></path>
+                <line class="body-centerline" x1="0" y1="-78" x2="0" y2="70"></line>
+                <path class="stabilizer" d="M -19 148 L -7 141 L 7 141 L 25 153 L 8 158 L -9 158 Z"></path>
+
+                <line id="actualThrustVector" class="thrust-actual" x1="0" y1="153" x2="-65" y2="153" marker-end="url(#arrowThrust)"></line>
+                <text id="thrustVectorLabel" class="svg-label" x="-74" y="142" text-anchor="end">10,420 N</text>
+
+                <g aria-hidden="true">
+                  <circle class="cog-ring" cx="0" cy="0" r="11"></circle>
+                  <line class="cog-cross" x1="-6" y1="0" x2="6" y2="0"></line>
+                  <line class="cog-cross" x1="0" y1="-6" x2="0" y2="6"></line>
+                </g>
+              </g>
+            </g>
+
+            <g id="verticalRateReadout" class="vertical-rate-readout" data-state="hover" transform="translate(82 504)">
+              <rect width="164" height="48" rx="8"></rect>
+              <path id="verticalRateArrow" class="vertical-rate-arrow" d="M 8 25 H 22"></path>
+              <text class="vertical-rate-title" x="32" y="17">VERTICAL RATE</text>
+              <text id="verticalRateValue" class="vertical-rate-value" x="32" y="36">HOVER 0.0 m/s</text>
+            </g>
+
+            </svg>
+          </div>
+
+          <div class="control simulation-control pedal-control pedal-dock">
+            <div class="control-head">
+              <label for="pedalRange">Yaw Pedals</label>
+              <div class="field-value">
+                <input id="pedalNumber" class="number-input" type="number" min="-6" max="20.6" step="0.1" value="11.2" aria-label="Tail-rotor blade pitch at seventy percent radius, limited by SPUU-52">
+                <span class="unit">°</span>
+              </div>
+            </div>
+            <input id="pedalRange" type="range" min="-6" max="20.6" step="0.1" value="11.2" aria-label="Tail-rotor pitch up to the SPUU-52 atmospheric limit" aria-keyshortcuts="ArrowLeft ArrowRight">
+            <div class="scale"><span>−6°</span><span id="pitchLimitScale">SPUU-52 max 20.6°</span></div>
+          </div>
+
+          <div class="control simulation-control power-rail">
+            <div class="control-head">
+              <label for="thrustRange">Power</label>
+              <div class="field-value">
+                <input id="thrustNumber" class="number-input" type="number" min="0" max="100" step="0.1" value="100" aria-label="Percentage of altitude-limited combined engine power">
+                <span class="unit">%</span>
+              </div>
+            </div>
+            <div class="vertical-control-body">
+              <div class="vertical-range-wrap">
+                <input id="thrustRange" type="range" min="0" max="100" step="1" value="100" orient="vertical" aria-label="Percentage of altitude-limited combined engine power" aria-keyshortcuts="ArrowUp ArrowDown">
+              </div>
+              <div class="scale vertical-scale"><span>100%</span><span>50%</span><span>0%</span></div>
+            </div>
+          </div>
+        </div>
+
+        <section class="lte-chart-section" aria-labelledby="lteChartTitle">
+          <div class="chart-header">
+            <div>
+              <h2 id="lteChartTitle" class="chart-title">Live tail-rotor thrust curve</h2>
+            </div>
+            <span id="lteStateBadge" class="lte-state" data-state="normal">Normal flow</span>
+          </div>
+
+          <svg id="lteChart" class="lte-chart" viewBox="0 0 720 230" role="img" aria-labelledby="lteChartSvgTitle lteChartDescription">
+            <title id="lteChartSvgTitle">Tail-rotor thrust versus blade angle of attack</title>
+            <desc id="lteChartDescription">A fixed reference curve shows tail-rotor thrust from zero to thirty-five thousand newtons on the vertical axis and peak local blade angle of attack on the horizontal axis. A live point shows the current operating condition.</desc>
+            <defs>
+              <clipPath id="ltePlotClip">
+                <rect x="58" y="16" width="632" height="164"></rect>
+              </clipPath>
+            </defs>
+
+            <rect class="chart-lte-region" x="405.6" y="16" width="284.4" height="164"></rect>
+
+            <g aria-hidden="true">
+              <line class="chart-grid-line" x1="58" y1="16" x2="690" y2="16"></line>
+              <line class="chart-grid-line" x1="58" y1="57" x2="690" y2="57"></line>
+              <line class="chart-grid-line" x1="58" y1="98" x2="690" y2="98"></line>
+              <line class="chart-grid-line" x1="58" y1="139" x2="690" y2="139"></line>
+              <line class="chart-grid-line" x1="58" y1="180" x2="690" y2="180"></line>
+              <line class="chart-grid-line" x1="58" y1="16" x2="58" y2="180"></line>
+              <line class="chart-grid-line" x1="216" y1="16" x2="216" y2="180"></line>
+              <line class="chart-grid-line" x1="374" y1="16" x2="374" y2="180"></line>
+              <line class="chart-grid-line" x1="532" y1="16" x2="532" y2="180"></line>
+              <line class="chart-grid-line" x1="690" y1="16" x2="690" y2="180"></line>
+              <line class="chart-axis" x1="58" y1="180" x2="690" y2="180"></line>
+              <line class="chart-axis" x1="58" y1="16" x2="58" y2="180"></line>
+
+              <text class="chart-tick" x="49" y="184" text-anchor="end">0</text>
+              <text class="chart-tick" x="49" y="143" text-anchor="end">8.75k</text>
+              <text class="chart-tick" x="49" y="102" text-anchor="end">17.5k</text>
+              <text class="chart-tick" x="49" y="61" text-anchor="end">26.25k</text>
+              <text class="chart-tick" x="49" y="20" text-anchor="end">35k</text>
+
+              <text class="chart-tick" x="58" y="196" text-anchor="middle">−10°</text>
+              <text class="chart-tick" x="216" y="196" text-anchor="middle">0°</text>
+              <text class="chart-tick" x="374" y="196" text-anchor="middle">10°</text>
+              <text class="chart-tick" x="532" y="196" text-anchor="middle">20°</text>
+              <text class="chart-tick" x="690" y="196" text-anchor="middle">30°</text>
+
+              <text class="chart-axis-label" x="374" y="220" text-anchor="middle">PEAK LOCAL BLADE ANGLE OF ATTACK α</text>
+              <text class="chart-axis-label" x="13" y="98" text-anchor="middle" transform="rotate(-90 13 98)">TAIL-ROTOR THRUST · N</text>
+            </g>
+
+            <line class="chart-critical-line" x1="405.6" y1="16" x2="405.6" y2="180"></line>
+            <text class="chart-critical-label" x="412" y="29">CRITICAL α · 12°</text>
+
+            <g clip-path="url(#ltePlotClip)">
+              <path id="lteCurvePath" class="chart-curve" d=""></path>
+              <line id="chartGuideVertical" class="chart-guide" x1="216" y1="180" x2="216" y2="139"></line>
+              <line id="chartGuideHorizontal" class="chart-guide" x1="58" y1="139" x2="216" y2="139"></line>
+              <circle id="chartCurrentPoint" class="chart-point" cx="216" cy="139" r="5"></circle>
+            </g>
+            <text id="chartCurrentLabel" class="chart-current-label" x="226" y="129">0.0° · 0 N</text>
+          </svg>
+
+        </section>
+      </section>
+
+      <aside class="panel telemetry-panel" aria-label="Live simulation outputs">
+        <section class="hero-readout">
+          <div class="hero-label">
+            <span>Yaw rate</span>
+            <span id="yawDirectionTag" class="direction-tag">STABLE</span>
+          </div>
+          <div class="hero-value">
+            <span id="yawRateValue">0.0</span><span class="hero-unit">°/s</span>
+          </div>
+          <div class="hero-heading">
+            <span class="hero-heading-label">Heading</span>
+            <span id="headingValue" class="hero-heading-value">000.0° N</span>
+          </div>
+        </section>
+
+        <div class="telemetry-grid">
+          <div class="telemetry-item">
+            <span class="telemetry-label">Actual tail-rotor thrust</span>
+            <span id="actualThrustValue" class="telemetry-value blue">10,420 N</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Required tail-rotor thrust</span>
+            <span id="requiredThrustValue" class="telemetry-value">10,420 N</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Mean blade angle of attack</span>
+            <span id="meanAoaValue" class="telemetry-value amber">0.0°</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Blade angle-of-attack range</span>
+            <span id="aoaRangeValue" class="telemetry-value">0.0° — 0.0°</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Relative axial airflow</span>
+            <span id="axialFlowValue" class="telemetry-value">0.0 m/s</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Geometric blade pitch</span>
+            <span id="pitchValue" class="telemetry-value">0.0°</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">SPUU-52 pitch limit</span>
+            <span id="spuuPitchLimitValue" class="telemetry-value">20.6°</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Main-rotor OGE lift capability</span>
+            <span id="mainRotorThrustValue" class="telemetry-value">14,000 kg</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Helicopter weight</span>
+            <span id="helicopterWeightValue" class="telemetry-value">13,0 t</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">MSA altitude</span>
+            <span id="msaAltitudeValue" class="telemetry-value">0 m</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Air temperature</span>
+            <span id="airTemperatureValue" class="telemetry-value">15.0&deg;C</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Air density</span>
+            <span id="airDensityValue" class="telemetry-value">1.225 kg/m³</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Maximum engine power at altitude</span>
+            <span id="availableEnginePowerValue" class="telemetry-value">4,000 k.s.</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Power split · main / tail</span>
+            <span id="powerSplitValue" class="telemetry-value">3,630 / 370 k.s.</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Hover efficiency · main / tail</span>
+            <span id="rotorEfficiencyValue" class="telemetry-value">0.62 / 0.52 FM</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Aerodynamic losses · main / tail</span>
+            <span id="rotorLossPowerValue" class="telemetry-value">0 / 0 kW</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Tail-rotor speed</span>
+            <span id="tailRotorRpmValue" class="telemetry-value">1,120 rpm</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Blade elements above critical α</span>
+            <span id="stalledFractionValue" class="telemetry-value">0%</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Simplified LTE state</span>
+            <span id="lteTelemetryValue" class="telemetry-value">Normal</span>
+          </div>
+        </div>
+
+        <section class="panel-section" aria-labelledby="ogeWindHeading">
+          <h2 id="ogeWindHeading" class="section-kicker">OGE wind correction</h2>
+          <div class="oge-summary">
+            <span class="oge-summary-label">Applied at current relative direction</span>
+            <span id="ogeActualCorrectionValue" class="oge-summary-value">Calm · 0 kg / 0 kW</span>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2 class="section-kicker">Yawing moments</h2>
+          <div class="moment-list">
+            <div class="moment-row">
+              <span class="moment-dot amber"></span>
+              <span class="moment-name">Main-rotor reaction</span>
+              <span id="mainTorqueValue" class="moment-value">+132,800 N·m</span>
+            </div>
+            <div class="moment-row">
+              <span class="moment-dot blue"></span>
+              <span class="moment-name">Tail rotor</span>
+              <span id="tailTorqueValue" class="moment-value">−132,800 N·m</span>
+            </div>
+            <div class="moment-row">
+              <span class="moment-dot cyan"></span>
+              <span class="moment-name">Wind on fuselage</span>
+              <span id="windTorqueValue" class="moment-value">0 N·m</span>
+            </div>
+            <div class="moment-row">
+              <span class="moment-dot magenta"></span>
+              <span class="moment-name">Net incl. damping</span>
+              <span id="netTorqueValue" class="moment-value">0 N·m</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel-section explanation">
+          <h2 class="section-kicker">What is happening</h2>
+          <p id="explanationText" class="explanation-text">The yaw moments are balanced. Heading is stable.</p>
+          <div class="legend" aria-label="Vector legend">
+            <span class="legend-item"><span class="legend-line"></span>Actual thrust</span>
+            <span class="legend-item"><span class="legend-line wind"></span>Wind movement</span>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <footer class="app-footer">
+      <div class="app-footer-copy">
+        <p>Simplified educational LTE approximation. Real LTE also depends on aircraft-specific aerodynamic interactions, not one universal blade angle.</p>
+        <p>All data used in this application comes from publicly available sources.</p>
+        <p>Project homepage: <a href="https://github.com/vrabczak/TailRotorLab">vrabczak/TailRotorLab</a></p>
+      </div>
+      <span>Clockwise main rotor · viewed from above</span>
+    </footer>
+
+    <div id="accessibleSummary" class="sr-only" aria-live="polite"></div>
+  </main>
+
+  <script>
+    "use strict";
+
+    const MODEL_CONFIG = Object.freeze({
+      enginePowerMetricHp: 4000,
+      metricHorsepowerWatts: 735.49875,
+      seaLevelTakeoffPowerHoverThrustKg: 14000,
+      referenceHelicopterWeightKg: 13000,
+      minHelicopterWeightKg: 9000,
+      maxHelicopterWeightKg: 13000,
+      minMsaAltitudeM: 0,
+      maxMsaAltitudeM: 6000,
+      minAirTemperatureC: -50,
+      maxAirTemperatureC: 50,
+      engineFlatRatingAltitudeM: 3600,
+      standardSeaLevelTemperatureK: 288.15,
+      standardTemperatureLapseRateKPerM: 0.0065,
+      standardGravityMps2: 9.80665,
+      specificGasConstantAirJkgK: 287.05287,
+      standardSeaLevelPressureMmHg: 760,
+      millimetersMercuryToPascal: 133.322368,
+      mainRotorRadiusM: 10.65,
+      mainRotorRpm: 192,
+      mainRotorBlades: 5,
+      mainRotorChordM: 0.521,
+      mainRotorRootFraction: 0.2,
+      mainRotorSolidity: 0.0777,
+      mainRotorTwistDeg: -6,
+      mainRotorInducedPowerFactor: 1.2,
+      mainRotorTipLossRadiusFactor: 0.97,
+      mainRotorMeanProfileCd: 0.011,
+      mainRotorFallbackFigureOfMerit: 0.62,
+      helicopterTipToTipLengthM: 25.352,
+      tailMomentArmM: 25.352 - 10.65 - 1.954,
+      nominalTailThrustEstimateN: 10420,
+      yawInertiaKgM2: 120000,
+      minYawInertiaAtReferenceWeightKgM2: 80000,
+      maxYawInertiaAtReferenceWeightKgM2: 160000,
+      yawDampingLinear: 1200,
+      yawDampingQuadratic: 1000,
+      seaLevelAirDensityKgM3: 1.225,
+      fuselageLateralCd: 1,
+      fuselageLateralAreaM2: 25,
+      centerOfPressureXM: -1.2,
+      tailRotorRadiusM: 1.954,
+      tailRotorPlanformAreaM2: 3 * 0.305 * 1.954 * (1 - 0.2),
+      tailRotorRootFraction: 0.2,
+      tailRotorBlades: 3,
+      tailRotorChordM: 0.305,
+      tailRotorSolidity: 3 * 0.305 / (Math.PI * 1.954),
+      tailRotorRpm: 1120,
+      tailRotorOmegaRadS: 1120 * 2 * Math.PI / 60,
+      tailRotorMaxGearboxPowerW: 442000,
+      pitchReferenceRadiusFraction: 0.7,
+      tailRotorMinPitchDeg: -6,
+      tailRotorPhysicalMaxPitchDeg: 23.25,
+      spuu52MinLimitedPitchDeg: 17 + 20 / 60,
+      spuu52ReferenceTemperatureC: 10,
+      spuu52ReferencePositionPercent: 50,
+      spuu52TemperatureGainPercentPerC: 1.05,
+      spuu52PressureGainPercentPerMmHg: 0.28,
+      liftCurveSlope: 5.7,
+      clMin: -1.2,
+      clMax: 1.5,
+      zeroLiftAlphaRad: -1.2 * Math.PI / 180,
+      criticalAlphaRad: 12 * Math.PI / 180,
+      collapseAlphaRad: 19 * Math.PI / 180,
+      postStallLiftFraction: 0.18,
+      lteFractionThreshold: 0.2,
+      cd0: 0.0069,
+      dragPolarK: 0.015,
+      tailRotorInducedPowerFactor: 1.2,
+      tailRotorTipLossRadiusFactor: 0.97,
+      tailRotorMaximumFigureOfMerit: 0.52,
+      radialSamples: 12,
+      azimuthSamples: 24,
+      inducedIterations: 7,
+      inducedRelaxation: 0.45,
+      physicsStepS: 1 / 120,
+      maxFrameTimeS: 0.05,
+      maxCatchUpSteps: 10,
+      balancedMomentNm: 50,
+      stableYawRateDegS: 0.05,
+      stableVerticalSpeedMps: 0.05,
+      verticalSpeedResponseTimeS: 2.5,
+      maxVerticalAccelerationMps2: 4,
+      maxVerticalSpeedMps: 25,
+      symbolicMainRotorRadS: 1.6,
+      numericUpdateIntervalS: 1 / 15,
+      chartUpdateIntervalS: 0.2
+    });
+
+    const DEG = Math.PI / 180;
+    const RAD = 180 / Math.PI;
+    const TOTAL_ENGINE_POWER_W =
+      MODEL_CONFIG.enginePowerMetricHp * MODEL_CONFIG.metricHorsepowerWatts;
+    const MAIN_ROTOR_OMEGA_RAD_S =
+      MODEL_CONFIG.mainRotorRpm * 2 * Math.PI / 60;
+    const TAIL_DISK_AREA = Math.PI * MODEL_CONFIG.tailRotorRadiusM ** 2;
+    const DEFAULT_INDUCED_VELOCITY = Math.sqrt(
+      MODEL_CONFIG.nominalTailThrustEstimateN /
+      (2 * MODEL_CONFIG.seaLevelAirDensityKgM3 * TAIL_DISK_AREA)
+    );
+    const LTE_CHART_PLOT = Object.freeze({
+      left: 58,
+      right: 690,
+      top: 16,
+      bottom: 180,
+      xMin: -10,
+      xMax: 30,
+      yMin: 0,
+      yMax: 35000
+    });
+
+    // Digitized from Mi-8MTV-5-1 Flight Manual, section 1, Figure 1.2:
+    // change in limiting OGE hover weight at 20 m versus wind speed/direction.
+    // The source combines left and right crosswind into one curve.
+    const OGE_WIND_NOMOGRAM = Object.freeze({
+      front: Object.freeze([
+        [0, 0], [1, 60], [2, 120], [3, 180], [4, 250], [5, 370],
+        [6, 490], [7, 625], [8, 770], [9, 930], [10, 1100]
+      ]),
+      side: Object.freeze([
+        [0, 0], [1, -150], [2, -220], [3, -170], [4, 0], [5, 150],
+        [6, 310], [7, 475], [8, 650], [9, 820], [10, 1000]
+      ]),
+      rear: Object.freeze([
+        [0, 0], [1, -260], [2, -500], [3, -650], [4, -750],
+        [5, -800], [6, -775], [7, -700], [8, -600], [9, -475],
+        [10, -325]
+      ])
+    });
+    const OGE_OBLIQUE_FLOW_TRANSITION_MPS = 40 / 3.6;
+
+    const state = {
+      tailRotorPitchDegrees: 11.2,
+      enginePowerPercent: 100,
+      helicopterWeightKg: 13000,
+      yawInertiaKgM2: MODEL_CONFIG.yawInertiaKgM2,
+      msaAltitudeM: 0,
+      airTemperatureC: 15,
+      windSpeedMps: 0,
+      windFromDegrees: 0,
+      headingRadians: 0,
+      yawRateRadiansPerSecond: 0,
+      verticalVelocityMps: 0,
+      nominalTrim: null,
+      tailRotorInducedVelocityMps: DEFAULT_INDUCED_VELOCITY,
+      simulationTimeSeconds: 0,
+      rotorPhaseRadians: 0,
+      hasStarted: false,
+      isPaused: true,
+      lastFrameTimestamp: null,
+      physicsAccumulator: 0,
+      uiAccumulator: 0,
+      chartAccumulator: 0,
+      lastFiniteHeadingRadians: 0,
+      lastFiniteYawRateRadiansPerSecond: 0,
+      lastFiniteVerticalVelocityMps: 0,
+      latest: null,
+      hasError: false
+    };
+
+    const chartVisualState = {
+      initialized: false,
+      xCoordinates: [],
+      referenceYCoordinates: [],
+      referenceMsaAltitudeM: null,
+      referenceAirTemperatureC: null,
+      displayedYCoordinates: [],
+      targetYCoordinates: [],
+      displayedPointX: 0,
+      displayedPointY: 0,
+      targetPointX: 0,
+      targetPointY: 0,
+      displayedAlphaDegrees: 0,
+      displayedThrustN: 0,
+      targetAlphaDegrees: 0,
+      targetThrustN: 0,
+      rawLteState: "normal",
+      visibleLteState: "normal",
+      rawStateElapsedS: 0
+    };
+
+    const elements = {
+      errorBanner: document.getElementById("errorBanner"),
+      controlsPanel: document.querySelector(".controls-panel"),
+      pedalRange: document.getElementById("pedalRange"),
+      pedalNumber: document.getElementById("pedalNumber"),
+      thrustRange: document.getElementById("thrustRange"),
+      thrustNumber: document.getElementById("thrustNumber"),
+      weightRange: document.getElementById("weightRange"),
+      weightNumber: document.getElementById("weightNumber"),
+      angularMomentumRange: document.getElementById("angularMomentumRange"),
+      angularMomentumNumber: document.getElementById("angularMomentumNumber"),
+      angularMomentumMinScale: document.getElementById("angularMomentumMinScale"),
+      angularMomentumMidScale: document.getElementById("angularMomentumMidScale"),
+      angularMomentumMaxScale: document.getElementById("angularMomentumMaxScale"),
+      msaAltitudeRange: document.getElementById("msaAltitudeRange"),
+      msaAltitudeNumber: document.getElementById("msaAltitudeNumber"),
+      airTemperatureRange: document.getElementById("airTemperatureRange"),
+      airTemperatureNumber: document.getElementById("airTemperatureNumber"),
+      pitchLimitScale: document.getElementById("pitchLimitScale"),
+      windSpeedRange: document.getElementById("windSpeedRange"),
+      windSpeedNumber: document.getElementById("windSpeedNumber"),
+      windDirectionRange: document.getElementById("windDirectionRange"),
+      windDirectionNumber: document.getElementById("windDirectionNumber"),
+      compassArrow: document.getElementById("compassArrow"),
+      directionReadout: document.getElementById("directionReadout"),
+      pauseButton: document.getElementById("pauseButton"),
+      resetButton: document.getElementById("resetButton"),
+      statusPill: document.getElementById("statusPill"),
+      helicopterRotation: document.getElementById("helicopterRotation"),
+      mainRotorVisual: document.getElementById("mainRotorVisual"),
+      actualThrustVector: document.getElementById("actualThrustVector"),
+      thrustVectorLabel: document.getElementById("thrustVectorLabel"),
+      windLine: document.getElementById("windLine"),
+      windLabel: document.getElementById("windLabel"),
+      windSubLabel: document.getElementById("windSubLabel"),
+      netArcCcw: document.getElementById("netArcCcw"),
+      netArcCw: document.getElementById("netArcCw"),
+      mainTorqueArc: document.getElementById("mainTorqueArc"),
+      mainTorqueLabel: document.getElementById("mainTorqueLabel"),
+      verticalRateReadout: document.getElementById("verticalRateReadout"),
+      verticalRateArrow: document.getElementById("verticalRateArrow"),
+      verticalRateValue: document.getElementById("verticalRateValue"),
+      headingValue: document.getElementById("headingValue"),
+      yawDirectionTag: document.getElementById("yawDirectionTag"),
+      yawRateValue: document.getElementById("yawRateValue"),
+      actualThrustValue: document.getElementById("actualThrustValue"),
+      requiredThrustValue: document.getElementById("requiredThrustValue"),
+      meanAoaValue: document.getElementById("meanAoaValue"),
+      aoaRangeValue: document.getElementById("aoaRangeValue"),
+      axialFlowValue: document.getElementById("axialFlowValue"),
+      pitchValue: document.getElementById("pitchValue"),
+      spuuPitchLimitValue: document.getElementById("spuuPitchLimitValue"),
+      mainRotorThrustValue: document.getElementById("mainRotorThrustValue"),
+      helicopterWeightValue: document.getElementById("helicopterWeightValue"),
+      msaAltitudeValue: document.getElementById("msaAltitudeValue"),
+      airTemperatureValue: document.getElementById("airTemperatureValue"),
+      airDensityValue: document.getElementById("airDensityValue"),
+      availableEnginePowerValue: document.getElementById("availableEnginePowerValue"),
+      powerSplitValue: document.getElementById("powerSplitValue"),
+      rotorEfficiencyValue: document.getElementById("rotorEfficiencyValue"),
+      rotorLossPowerValue: document.getElementById("rotorLossPowerValue"),
+      tailRotorRpmValue: document.getElementById("tailRotorRpmValue"),
+      stalledFractionValue: document.getElementById("stalledFractionValue"),
+      lteTelemetryValue: document.getElementById("lteTelemetryValue"),
+      ogeActualCorrectionValue: document.getElementById("ogeActualCorrectionValue"),
+      lteStateBadge: document.getElementById("lteStateBadge"),
+      lteCurvePath: document.getElementById("lteCurvePath"),
+      chartGuideVertical: document.getElementById("chartGuideVertical"),
+      chartGuideHorizontal: document.getElementById("chartGuideHorizontal"),
+      chartCurrentPoint: document.getElementById("chartCurrentPoint"),
+      chartCurrentLabel: document.getElementById("chartCurrentLabel"),
+      mainTorqueValue: document.getElementById("mainTorqueValue"),
+      tailTorqueValue: document.getElementById("tailTorqueValue"),
+      windTorqueValue: document.getElementById("windTorqueValue"),
+      netTorqueValue: document.getElementById("netTorqueValue"),
+      explanationText: document.getElementById("explanationText"),
+      accessibleSummary: document.getElementById("accessibleSummary")
+    };
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function wrapDegrees(value) {
+      return ((value % 360) + 360) % 360;
+    }
+
+    function wrapRadians(value) {
+      return ((value + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+    }
+
+    function finiteOr(value, fallback) {
+      return Number.isFinite(value) ? value : fallback;
+    }
+
+    function yawInertiaBoundsForWeight(weightKg = state.helicopterWeightKg) {
+      const weightRatio =
+        weightKg / MODEL_CONFIG.referenceHelicopterWeightKg;
+      return {
+        min:
+          MODEL_CONFIG.minYawInertiaAtReferenceWeightKgM2 * weightRatio,
+        max:
+          MODEL_CONFIG.maxYawInertiaAtReferenceWeightKgM2 * weightRatio
+      };
+    }
+
+    function standardTemperatureCAtMsaAltitude(msaAltitudeM) {
+      const config = MODEL_CONFIG;
+      const altitudeM = clamp(
+        finiteOr(msaAltitudeM, 0),
+        config.minMsaAltitudeM,
+        config.maxMsaAltitudeM
+      );
+      return (
+        config.standardSeaLevelTemperatureK -
+        273.15 -
+        config.standardTemperatureLapseRateKPerM * altitudeM
+      );
+    }
+
+    function standardPressureMmHgAtMsaAltitude(msaAltitudeM) {
+      const config = MODEL_CONFIG;
+      const altitudeM = clamp(
+        finiteOr(msaAltitudeM, 0),
+        config.minMsaAltitudeM,
+        config.maxMsaAltitudeM
+      );
+      const temperatureRatio =
+        1 -
+        config.standardTemperatureLapseRateKPerM * altitudeM /
+        config.standardSeaLevelTemperatureK;
+      const pressureExponent =
+        config.standardGravityMps2 /
+        (
+          config.specificGasConstantAirJkgK *
+          config.standardTemperatureLapseRateKPerM
+        );
+      return (
+        config.standardSeaLevelPressureMmHg *
+        Math.pow(Math.max(temperatureRatio, 0.01), pressureExponent)
+      );
+    }
+
+    function atmosphereAtMsaAltitudeAndTemperature(
+      msaAltitudeM,
+      airTemperatureC
+    ) {
+      const config = MODEL_CONFIG;
+      const altitudeM = clamp(
+        finiteOr(msaAltitudeM, 0),
+        config.minMsaAltitudeM,
+        config.maxMsaAltitudeM
+      );
+      const temperatureC = clamp(
+        finiteOr(
+          airTemperatureC,
+          standardTemperatureCAtMsaAltitude(altitudeM)
+        ),
+        config.minAirTemperatureC,
+        config.maxAirTemperatureC
+      );
+      const pressureMmHg = standardPressureMmHgAtMsaAltitude(altitudeM);
+      const pressurePa =
+        pressureMmHg * config.millimetersMercuryToPascal;
+      const temperatureK = temperatureC + 273.15;
+
+      return {
+        altitudeM,
+        temperatureC,
+        pressureMmHg,
+        airDensityKgM3:
+          pressurePa /
+          (config.specificGasConstantAirJkgK * temperatureK)
+      };
+    }
+
+    function tailRotorPitchLimitAtConditions(msaAltitudeM, airTemperatureC) {
+      const config = MODEL_CONFIG;
+      const atmosphere = atmosphereAtMsaAltitudeAndTemperature(
+        msaAltitudeM,
+        airTemperatureC
+      );
+      const availableTravelPercent = clamp(
+        config.spuu52ReferencePositionPercent +
+        config.spuu52TemperatureGainPercentPerC *
+          (
+            atmosphere.temperatureC -
+            config.spuu52ReferenceTemperatureC
+          ) +
+        config.spuu52PressureGainPercentPerMmHg *
+          (
+            config.standardSeaLevelPressureMmHg -
+            atmosphere.pressureMmHg
+          ),
+        0,
+        100
+      );
+      const exactLimit =
+        config.spuu52MinLimitedPitchDeg +
+        availableTravelPercent / 100 *
+        (
+          config.tailRotorPhysicalMaxPitchDeg -
+          config.spuu52MinLimitedPitchDeg
+        );
+
+      // Keep the UI's 0.1° command steps on or below the physical limit.
+      return Math.floor((exactLimit + 1e-9) * 10) / 10;
+    }
+
+    function currentTailRotorPitchLimitDeg() {
+      return tailRotorPitchLimitAtConditions(
+        state.msaAltitudeM,
+        state.airTemperatureC
+      );
+    }
+
+    function applyTailRotorPitchLimit() {
+      state.tailRotorPitchDegrees = clamp(
+        state.tailRotorPitchDegrees,
+        MODEL_CONFIG.tailRotorMinPitchDeg,
+        currentTailRotorPitchLimitDeg()
+      );
+    }
+
+    function currentAirDensityKgM3() {
+      return atmosphereAtMsaAltitudeAndTemperature(
+        state.msaAltitudeM,
+        state.airTemperatureC
+      ).airDensityKgM3;
+    }
+
+    function enginePowerFactorAtConditions(msaAltitudeM, airTemperatureC) {
+      const config = MODEL_CONFIG;
+      if (msaAltitudeM <= config.engineFlatRatingAltitudeM) {
+        return 1;
+      }
+      const flatRatingTemperatureC = standardTemperatureCAtMsaAltitude(
+        config.engineFlatRatingAltitudeM
+      );
+      const flatRatingDensity = atmosphereAtMsaAltitudeAndTemperature(
+        config.engineFlatRatingAltitudeM,
+        flatRatingTemperatureC
+      ).airDensityKgM3;
+      const currentDensity = atmosphereAtMsaAltitudeAndTemperature(
+        msaAltitudeM,
+        airTemperatureC
+      ).airDensityKgM3;
+      return clamp(
+        currentDensity / flatRatingDensity,
+        0,
+        1
+      );
+    }
+
+    function smoothstep01(value) {
+      const t = clamp(value, 0, 1);
+      return t * t * (3 - 2 * t);
+    }
+
+    function interpolateOgeNomogramCurve(curve, windSpeedMps) {
+      const speed = Math.max(0, finiteOr(windSpeedMps, 0));
+      if (speed <= curve[0][0]) return curve[0][1];
+
+      for (let index = 1; index < curve.length; index += 1) {
+        const [upperSpeed, upperCorrectionKg] = curve[index];
+        if (speed <= upperSpeed) {
+          const [lowerSpeed, lowerCorrectionKg] = curve[index - 1];
+          const fraction =
+            (speed - lowerSpeed) / Math.max(1e-9, upperSpeed - lowerSpeed);
+          return lowerCorrectionKg +
+            (upperCorrectionKg - lowerCorrectionKg) * fraction;
+        }
+      }
+
+      const [lastSpeed, lastCorrectionKg] = curve[curve.length - 1];
+      const [previousSpeed, previousCorrectionKg] = curve[curve.length - 2];
+      const lastSlopeKgPerMps =
+        (lastCorrectionKg - previousCorrectionKg) /
+        Math.max(1e-9, lastSpeed - previousSpeed);
+      const extrapolatedSpeed = clamp(
+        speed,
+        lastSpeed,
+        OGE_OBLIQUE_FLOW_TRANSITION_MPS
+      );
+
+      // Above the 10 m/s RLE scale, continue the final measured trend until
+      // the upper edge of the Mi-8 axial-to-oblique-flow transition (40 km/h).
+      // Beyond that point this hover model holds the transition value; the
+      // tail rotor still uses full relative-flow blade-element aerodynamics.
+      return lastCorrectionKg +
+        lastSlopeKgPerMps * (extrapolatedSpeed - lastSpeed);
+    }
+
+    function ogeCardinalCorrectionsKg(windSpeedMps) {
+      const front = interpolateOgeNomogramCurve(
+        OGE_WIND_NOMOGRAM.front,
+        windSpeedMps
+      );
+      const side = interpolateOgeNomogramCurve(
+        OGE_WIND_NOMOGRAM.side,
+        windSpeedMps
+      );
+      const rear = interpolateOgeNomogramCurve(
+        OGE_WIND_NOMOGRAM.rear,
+        windSpeedMps
+      );
+      return { front, left: side, right: side, rear };
+    }
+
+    function idealHoverPowerW(thrustN, airDensityKgM3, diskAreaM2) {
+      if (
+        thrustN <= 0 ||
+        airDensityKgM3 <= 0 ||
+        diskAreaM2 <= 0
+      ) {
+        return 0;
+      }
+      return Math.pow(thrustN, 1.5) /
+        Math.sqrt(2 * airDensityKgM3 * diskAreaM2);
+    }
+
+    function mainRotorPowerForThrust(
+      thrustN,
+      airDensityKgM3,
+      figureOfMeritCeiling
+    ) {
+      const config = MODEL_CONFIG;
+      const diskAreaM2 = Math.PI * config.mainRotorRadiusM ** 2;
+      const effectiveDiskAreaM2 =
+        diskAreaM2 * config.mainRotorTipLossRadiusFactor ** 2;
+      const tipSpeedMps = MAIN_ROTOR_OMEGA_RAD_S * config.mainRotorRadiusM;
+      const idealPowerW = idealHoverPowerW(
+        thrustN,
+        airDensityKgM3,
+        diskAreaM2
+      );
+      const inducedPowerW =
+        config.mainRotorInducedPowerFactor *
+        idealHoverPowerW(thrustN, airDensityKgM3, effectiveDiskAreaM2);
+      const profilePowerW =
+        airDensityKgM3 *
+        diskAreaM2 *
+        tipSpeedMps ** 3 *
+        config.mainRotorSolidity *
+        config.mainRotorMeanProfileCd /
+        8;
+      const fmLimitedPowerW =
+        idealPowerW /
+        Math.max(
+          0.05,
+          finiteOr(
+            figureOfMeritCeiling,
+            config.mainRotorFallbackFigureOfMerit
+          )
+        );
+      const shaftPowerW = Math.max(
+        inducedPowerW + profilePowerW,
+        fmLimitedPowerW
+      );
+
+      return {
+        thrustN,
+        idealPowerW,
+        inducedPowerW,
+        profilePowerW,
+        calibrationLossPowerW: Math.max(
+          0,
+          shaftPowerW - inducedPowerW - profilePowerW
+        ),
+        aerodynamicLossPowerW: Math.max(0, shaftPowerW - idealPowerW),
+        shaftPowerW,
+        figureOfMerit:
+          shaftPowerW > 0 ? idealPowerW / shaftPowerW : 0
+      };
+    }
+
+    function solveMainRotorAtFixedRpm(
+      availablePowerW,
+      airDensityKgM3,
+      figureOfMeritCeiling
+    ) {
+      const zeroThrust = mainRotorPowerForThrust(
+        0,
+        airDensityKgM3,
+        figureOfMeritCeiling
+      );
+      if (availablePowerW <= zeroThrust.shaftPowerW) {
+        return {
+          ...zeroThrust,
+          allocatedPowerW: Math.max(0, availablePowerW),
+          powerDeficitW: Math.max(
+            0,
+            zeroThrust.shaftPowerW - availablePowerW
+          ),
+          fixedRpmSustainable: false
+        };
+      }
+
+      let lowThrustN = 0;
+      let highThrustN = 300000;
+      for (let iteration = 0; iteration < 48; iteration += 1) {
+        const midThrustN = (lowThrustN + highThrustN) / 2;
+        const candidate = mainRotorPowerForThrust(
+          midThrustN,
+          airDensityKgM3,
+          figureOfMeritCeiling
+        );
+        if (candidate.shaftPowerW > availablePowerW) {
+          highThrustN = midThrustN;
+        } else {
+          lowThrustN = midThrustN;
+        }
+      }
+
+      const result = mainRotorPowerForThrust(
+        lowThrustN,
+        airDensityKgM3,
+        figureOfMeritCeiling
+      );
+      result.allocatedPowerW = Math.max(0, availablePowerW);
+      result.powerDeficitW = 0;
+      result.fixedRpmSustainable = true;
+      return result;
+    }
+
+    function sectionLiftCoefficient(alphaRadians) {
+      const config = MODEL_CONFIG;
+      const linear = clamp(
+        config.liftCurveSlope * (alphaRadians - config.zeroLiftAlphaRad),
+        config.clMin,
+        config.clMax
+      );
+
+      if (alphaRadians <= config.criticalAlphaRad) {
+        return linear;
+      }
+
+      const progress = smoothstep01(
+        (alphaRadians - config.criticalAlphaRad) /
+        (config.collapseAlphaRad - config.criticalAlphaRad)
+      );
+      const liftAtCritical = clamp(
+        config.liftCurveSlope *
+          (config.criticalAlphaRad - config.zeroLiftAlphaRad),
+        config.clMin,
+        config.clMax
+      );
+      return liftAtCritical * (
+        1 - progress * (1 - config.postStallLiftFraction)
+      );
+    }
+
+    function formatSignedInteger(value) {
+      const rounded = Math.abs(value) < 0.5 ? 0 : Math.round(value);
+      if (rounded === 0) return "0";
+      const sign = rounded > 0 ? "+" : "−";
+      return sign + Math.abs(rounded).toLocaleString("en-US");
+    }
+
+    function formatOgeCorrection(correctionKg, equivalentPowerDeltaW) {
+      return `${formatSignedInteger(correctionKg)} kg / ` +
+        `${formatSignedInteger(equivalentPowerDeltaW / 1000)} kW`;
+    }
+
+    function compassPoint(degrees) {
+      const points = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+      return points[Math.round(wrapDegrees(degrees) / 45) % 8];
+    }
+
+    function currentTailRotorPitchRadians() {
+      return state.tailRotorPitchDegrees * DEG;
+    }
+
+    function tailRotorElements(
+      pitchRadians,
+      inducedVelocityMps,
+      externalVelocityBody,
+      collectChartElements = false,
+      rotorOmegaRadS = MODEL_CONFIG.tailRotorOmegaRadS,
+      airDensityKgM3 = currentAirDensityKgM3()
+    ) {
+      const config = MODEL_CONFIG;
+      const rRoot = config.tailRotorRadiusM * config.tailRotorRootFraction;
+      const dr = (config.tailRotorRadiusM - rRoot) / config.radialSamples;
+      const vAxialExternal = -externalVelocityBody.y;
+      const inPlaneForward = externalVelocityBody.x;
+      const up = inducedVelocityMps + vAxialExternal;
+
+      let totalThrust = 0;
+      let totalInducedTorque = 0;
+      let totalProfileTorque = 0;
+      let alphaSum = 0;
+      let alphaCount = 0;
+      let alphaMin = Infinity;
+      let alphaMax = -Infinity;
+      let phiSum = 0;
+      let stalledElementCount = 0;
+      const chartElements = collectChartElements ? [] : null;
+
+      for (let azimuthIndex = 0; azimuthIndex < config.azimuthSamples; azimuthIndex += 1) {
+        const rotorAzimuth = 2 * Math.PI * azimuthIndex / config.azimuthSamples;
+
+        for (let blade = 0; blade < config.tailRotorBlades; blade += 1) {
+          const beta = rotorAzimuth + 2 * Math.PI * blade / config.tailRotorBlades;
+          const tangentialX = Math.cos(beta);
+          const vPlaneTangential = inPlaneForward * tangentialX;
+
+          for (let radialIndex = 0; radialIndex < config.radialSamples; radialIndex += 1) {
+            const radius = rRoot + (radialIndex + 0.5) * dr;
+            const ut = Math.max(0.5, rotorOmegaRadS * radius - vPlaneTangential);
+            const phi = Math.atan2(up, ut);
+            const alpha = pitchRadians - phi;
+            const speedSquared = ut * ut + up * up;
+            const cl = sectionLiftCoefficient(alpha);
+            const cd = config.cd0 + config.dragPolarK * cl * cl;
+            const dynamicFactor = 0.5 * airDensityKgM3 * speedSquared * config.tailRotorChordM * dr;
+            const lift = dynamicFactor * cl;
+            const drag = dynamicFactor * cd;
+            const elementThrust = lift * Math.cos(phi) - drag * Math.sin(phi);
+
+            totalThrust += elementThrust;
+            totalInducedTorque += lift * Math.sin(phi) * radius;
+            totalProfileTorque += drag * Math.cos(phi) * radius;
+            if (chartElements) {
+              chartElements.push({
+                alphaRadians: alpha,
+                liftFactorNPerCl: dynamicFactor * Math.cos(phi),
+                dragFactorNPerCd: dynamicFactor * Math.sin(phi)
+              });
+            }
+            alphaSum += alpha;
+            phiSum += phi;
+            alphaCount += 1;
+            alphaMin = Math.min(alphaMin, alpha);
+            alphaMax = Math.max(alphaMax, alpha);
+            if (alpha > config.criticalAlphaRad) {
+              stalledElementCount += 1;
+            }
+          }
+        }
+      }
+
+      const averageFactor = 1 / config.azimuthSamples;
+      const rawInducedTorqueNm = totalInducedTorque * averageFactor;
+      const rawProfileTorqueNm = totalProfileTorque * averageFactor;
+      const rawShaftTorqueNm =
+        rawInducedTorqueNm + rawProfileTorqueNm;
+      return {
+        thrustN: totalThrust * averageFactor,
+        rawInducedTorqueNm,
+        rawProfileTorqueNm,
+        rawShaftTorqueNm,
+        rawInducedPowerW: rawInducedTorqueNm * rotorOmegaRadS,
+        rawProfilePowerW: rawProfileTorqueNm * rotorOmegaRadS,
+        rawShaftPowerW: rawShaftTorqueNm * rotorOmegaRadS,
+        shaftTorqueNm: rawShaftTorqueNm,
+        shaftPowerW: rawShaftTorqueNm * rotorOmegaRadS,
+        rotorOmegaRadS,
+        rotorRpm: rotorOmegaRadS * 60 / (2 * Math.PI),
+        meanAlphaRadians: alphaCount ? alphaSum / alphaCount : 0,
+        minAlphaRadians: alphaMin,
+        maxAlphaRadians: alphaMax,
+        meanPhiRadians: alphaCount ? phiSum / alphaCount : 0,
+        externalAxialVelocityMps: vAxialExternal,
+        stalledElementFraction: alphaCount ? stalledElementCount / alphaCount : 0,
+        chartElements
+      };
+    }
+
+    function solveTailRotor(
+      pitchRadians,
+      externalVelocityBody,
+      inducedSeed,
+      rotorOmegaRadS = MODEL_CONFIG.tailRotorOmegaRadS,
+      airDensityKgM3 = currentAirDensityKgM3()
+    ) {
+      const config = MODEL_CONFIG;
+      let induced = Math.max(0, finiteOr(inducedSeed, DEFAULT_INDUCED_VELOCITY));
+      let result = null;
+
+      for (let i = 0; i < config.inducedIterations; i += 1) {
+        result = tailRotorElements(
+          pitchRadians,
+          induced,
+          externalVelocityBody,
+          false,
+          rotorOmegaRadS,
+          airDensityKgM3
+        );
+        const targetInduced = Math.sqrt(
+          Math.max(result.thrustN, 0) /
+          (2 * airDensityKgM3 * TAIL_DISK_AREA)
+        );
+        induced += (targetInduced - induced) * config.inducedRelaxation;
+      }
+
+      result = tailRotorElements(
+        pitchRadians,
+        induced,
+        externalVelocityBody,
+        false,
+        rotorOmegaRadS,
+        airDensityKgM3
+      );
+      result.inducedVelocityMps = induced;
+      const effectiveDiskAreaM2 =
+        TAIL_DISK_AREA * config.tailRotorTipLossRadiusFactor ** 2;
+      const idealPowerW = idealHoverPowerW(
+        Math.max(0, result.thrustN),
+        airDensityKgM3,
+        TAIL_DISK_AREA
+      );
+      const inducedPowerW =
+        Math.max(0, result.rawInducedPowerW) *
+        config.tailRotorInducedPowerFactor /
+        config.tailRotorTipLossRadiusFactor;
+      const profilePowerW = Math.max(0, result.rawProfilePowerW);
+      const tipLossIdealPowerW = idealHoverPowerW(
+        Math.max(0, result.thrustN),
+        airDensityKgM3,
+        effectiveDiskAreaM2
+      );
+      const minimumEfficiencyPowerW =
+        idealPowerW / config.tailRotorMaximumFigureOfMerit;
+      const resolvedInducedPowerW = Math.max(
+        inducedPowerW,
+        config.tailRotorInducedPowerFactor * tipLossIdealPowerW
+      );
+      const calibrationLossPowerW = Math.max(
+        0,
+        minimumEfficiencyPowerW - resolvedInducedPowerW - profilePowerW
+      );
+      const shaftPowerW =
+        resolvedInducedPowerW + profilePowerW + calibrationLossPowerW;
+      result.idealPowerW = idealPowerW;
+      result.inducedPowerW = resolvedInducedPowerW;
+      result.profilePowerW = profilePowerW;
+      result.calibrationLossPowerW = calibrationLossPowerW;
+      result.aerodynamicLossPowerW = Math.max(
+        0,
+        shaftPowerW - idealPowerW
+      );
+      result.shaftPowerW = shaftPowerW;
+      result.shaftTorqueNm =
+        rotorOmegaRadS > 0 ? shaftPowerW / rotorOmegaRadS : 0;
+      result.figureOfMerit =
+        shaftPowerW > 0 ? idealPowerW / shaftPowerW : 0;
+      return result;
+    }
+
+    function solveFixedRpmTailRotor(
+      pitchRadians,
+      externalVelocityBody,
+      inducedSeed,
+      availablePowerW,
+      airDensityKgM3
+    ) {
+      const nominal = solveTailRotor(
+        pitchRadians,
+        externalVelocityBody,
+        inducedSeed,
+        MODEL_CONFIG.tailRotorOmegaRadS,
+        airDensityKgM3
+      );
+      nominal.allocatedPowerW = Math.min(
+        Math.max(0, nominal.shaftPowerW),
+        Math.max(0, availablePowerW)
+      );
+      nominal.powerDeficitW = Math.max(
+        0,
+        nominal.shaftPowerW - availablePowerW
+      );
+      nominal.fixedRpmSustainable = nominal.powerDeficitW < 1;
+      return nominal;
+    }
+
+    function calibrateNominalTrim() {
+      const config = MODEL_CONFIG;
+      const pitchLimitDeg = currentTailRotorPitchLimitDeg();
+      const noAirflow = { x: 0, y: 0 };
+      const finalizeCalibration = result => {
+        const referenceThrustN =
+          config.seaLevelTakeoffPowerHoverThrustKg *
+          config.standardGravityMps2;
+        const mainDiskAreaM2 = Math.PI * config.mainRotorRadiusM ** 2;
+        return {
+          ...result,
+          mainRotorFigureOfMerit:
+            idealHoverPowerW(
+              referenceThrustN,
+              config.seaLevelAirDensityKgM3,
+              mainDiskAreaM2
+            ) /
+            Math.max(1, result.mainRotorPowerW)
+        };
+      };
+      const balanceAtPitch = pitchRadians => {
+        const tail = solveTailRotor(
+          pitchRadians,
+          noAirflow,
+          DEFAULT_INDUCED_VELOCITY,
+          config.tailRotorOmegaRadS,
+          config.seaLevelAirDensityKgM3
+        );
+        const tailPowerW = Math.max(0, tail.shaftPowerW);
+        const mainRotorPowerW = Math.max(0, TOTAL_ENGINE_POWER_W - tailPowerW);
+        const mainRotorTorqueNm = mainRotorPowerW / MAIN_ROTOR_OMEGA_RAD_S;
+        const requiredTailThrustN =
+          mainRotorTorqueNm / config.tailMomentArmM;
+
+        return {
+          pitchRadians,
+          tail,
+          tailPowerW,
+          mainRotorPowerW,
+          mainRotorTorqueNm,
+          requiredTailThrustN,
+          errorN: tail.thrustN - requiredTailThrustN
+        };
+      };
+
+      let previous = balanceAtPitch(config.tailRotorMinPitchDeg * DEG);
+      let best = previous;
+      let bracket = null;
+
+      for (
+        let pitchDegrees = config.tailRotorMinPitchDeg + 0.25;
+        pitchDegrees <= pitchLimitDeg + 1e-9;
+        pitchDegrees = Math.min(pitchDegrees + 0.25, pitchLimitDeg)
+      ) {
+        const current = balanceAtPitch(pitchDegrees * DEG);
+        if (Math.abs(current.errorN) < Math.abs(best.errorN)) {
+          best = current;
+        }
+        if (previous.errorN <= 0 && current.errorN >= 0) {
+          bracket = {
+            low: previous.pitchRadians,
+            high: current.pitchRadians
+          };
+          break;
+        }
+        if (pitchDegrees === pitchLimitDeg) break;
+        previous = current;
+      }
+
+      if (!bracket) {
+        return finalizeCalibration(best);
+      }
+
+      for (let iteration = 0; iteration < 42; iteration += 1) {
+        const mid = (bracket.low + bracket.high) / 2;
+        const result = balanceAtPitch(mid);
+        best = result;
+        if (result.errorN < 0) {
+          bracket.low = mid;
+        } else {
+          bracket.high = mid;
+        }
+      }
+
+      return finalizeCalibration(best);
+    }
+
+    function windWorldVector() {
+      const theta = state.windFromDegrees * DEG;
+      return {
+        x: -state.windSpeedMps * Math.sin(theta),
+        y: -state.windSpeedMps * Math.cos(theta)
+      };
+    }
+
+    function worldToBody(worldVector) {
+      const psi = state.headingRadians;
+      const forwardX = -Math.sin(psi);
+      const forwardY = Math.cos(psi);
+      const leftX = -Math.cos(psi);
+      const leftY = -Math.sin(psi);
+
+      return {
+        x: worldVector.x * forwardX + worldVector.y * forwardY,
+        y: worldVector.x * leftX + worldVector.y * leftY
+      };
+    }
+
+    function ogeWindCorrectionForBodyWind(bodyWind, windSpeedMps) {
+      const cardinalKg = ogeCardinalCorrectionsKg(windSpeedMps);
+      if (windSpeedMps <= 0.01) {
+        return {
+          relativeFromAngleRadians: 0,
+          relativeLabel: "Calm",
+          correctionKg: 0,
+          cardinalKg
+        };
+      }
+
+      // bodyWind is air motion; negate it to obtain the direction it comes from.
+      const sourceX = -bodyWind.x;
+      const sourceY = -bodyWind.y;
+      const relativeFromAngleRadians = Math.atan2(sourceY, sourceX);
+      const absoluteAngle = Math.abs(relativeFromAngleRadians);
+      const fromLeft = relativeFromAngleRadians > 0;
+      const sideCorrectionKg = fromLeft ? cardinalKg.left : cardinalKg.right;
+      let correctionKg;
+
+      if (absoluteAngle <= Math.PI / 2) {
+        const blend = smoothstep01(absoluteAngle / (Math.PI / 2));
+        correctionKg = cardinalKg.front +
+          (sideCorrectionKg - cardinalKg.front) * blend;
+      } else {
+        const blend = smoothstep01(
+          (absoluteAngle - Math.PI / 2) / (Math.PI / 2)
+        );
+        correctionKg = sideCorrectionKg +
+          (cardinalKg.rear - sideCorrectionKg) * blend;
+      }
+
+      const angleDegrees = absoluteAngle * RAD;
+      let relativeLabel = "Wind from rear";
+      if (angleDegrees < 22.5) {
+        relativeLabel = "Wind from front";
+      } else if (angleDegrees < 67.5) {
+        relativeLabel = fromLeft ? "Wind from front-left" : "Wind from front-right";
+      } else if (angleDegrees < 112.5) {
+        relativeLabel = fromLeft ? "Wind from left" : "Wind from right";
+      } else if (angleDegrees < 157.5) {
+        relativeLabel = fromLeft ? "Wind from rear-left" : "Wind from rear-right";
+      }
+
+      return {
+        relativeFromAngleRadians,
+        relativeLabel,
+        correctionKg,
+        cardinalKg
+      };
+    }
+
+    function calculateModel() {
+      const config = MODEL_CONFIG;
+      const worldWind = windWorldVector();
+      const bodyWind = worldToBody(worldWind);
+
+      const hubYawVelocityY = -state.yawRateRadiansPerSecond * config.tailMomentArmM;
+      const externalTailVelocity = {
+        x: bodyWind.x,
+        y: bodyWind.y - hubYawVelocityY
+      };
+
+      const airDensityKgM3 = currentAirDensityKgM3();
+      const enginePowerFactor = enginePowerFactorAtConditions(
+        state.msaAltitudeM,
+        state.airTemperatureC
+      );
+      const inputFraction = state.enginePowerPercent / 100;
+      const maximumAvailableEnginePowerW =
+        TOTAL_ENGINE_POWER_W * enginePowerFactor;
+      const availableRotorPowerW =
+        maximumAvailableEnginePowerW * inputFraction;
+      const tail = solveFixedRpmTailRotor(
+        currentTailRotorPitchRadians(),
+        externalTailVelocity,
+        state.tailRotorInducedVelocityMps,
+        availableRotorPowerW,
+        airDensityKgM3
+      );
+
+      const tailRotorPowerDemandW = Math.max(0, tail.shaftPowerW);
+      const tailRotorPowerW = Math.min(
+        tailRotorPowerDemandW,
+        availableRotorPowerW
+      );
+      const mainRotorPowerW = Math.max(
+        0,
+        availableRotorPowerW - tailRotorPowerDemandW
+      );
+      const mainRotor = solveMainRotorAtFixedRpm(
+        mainRotorPowerW,
+        airDensityKgM3,
+        state.nominalTrim?.mainRotorFigureOfMerit
+      );
+      const mainRotorTorqueNm =
+        mainRotorPowerW / MAIN_ROTOR_OMEGA_RAD_S;
+      const ogeWind = ogeWindCorrectionForBodyWind(
+        bodyWind,
+        state.windSpeedMps
+      );
+      const helicopterWeightN =
+        state.helicopterWeightKg * config.standardGravityMps2;
+      const stillAirHoverPowerW = mainRotorPowerForThrust(
+        helicopterWeightN,
+        airDensityKgM3,
+        state.nominalTrim?.mainRotorFigureOfMerit
+      ).shaftPowerW;
+      // Required hover power uses the complete nomogram correction. Keep the
+      // current lift-capability readout physical at very low power by fading
+      // only that separate display/trim contribution below hover power.
+      const ogeLiftParticipation = clamp(
+        mainRotorPowerW / Math.max(stillAirHoverPowerW, 1),
+        0,
+        1
+      );
+      const appliedOgeCorrectionKg = ogeWind.correctionKg;
+      const liftCapabilityCorrectionKg =
+        appliedOgeCorrectionKg * ogeLiftParticipation;
+      const mainRotorStillAirThrustKg =
+        mainRotor.thrustN / config.standardGravityMps2;
+      const mainRotorThrustKg = Math.max(
+        0,
+        mainRotorStillAirThrustKg + liftCapabilityCorrectionKg
+      );
+      const equivalentHoverWeightKg = Math.max(
+        1,
+        state.helicopterWeightKg - appliedOgeCorrectionKg
+      );
+      const hoverPowerW = mainRotorPowerForThrust(
+        equivalentHoverWeightKg * config.standardGravityMps2,
+        airDensityKgM3,
+        state.nominalTrim?.mainRotorFigureOfMerit
+      ).shaftPowerW;
+      const equivalentPowerDeltaForCorrectionW = correctionKg =>
+        mainRotorPowerForThrust(
+          Math.max(1, state.helicopterWeightKg - correctionKg) *
+            config.standardGravityMps2,
+          airDensityKgM3,
+          state.nominalTrim?.mainRotorFigureOfMerit
+        ).shaftPowerW - stillAirHoverPowerW;
+      const ogeCardinalPowerDeltaW = {
+        front: equivalentPowerDeltaForCorrectionW(ogeWind.cardinalKg.front),
+        left: equivalentPowerDeltaForCorrectionW(ogeWind.cardinalKg.left),
+        right: equivalentPowerDeltaForCorrectionW(ogeWind.cardinalKg.right),
+        rear: equivalentPowerDeltaForCorrectionW(ogeWind.cardinalKg.rear)
+      };
+      const targetVerticalSpeedMps = clamp(
+        (mainRotorPowerW - hoverPowerW) / helicopterWeightN,
+        -config.maxVerticalSpeedMps,
+        config.maxVerticalSpeedMps
+      );
+      // The excess-power result is a steady rate, not an instantaneous one.
+      // Approach it over time so aircraft inertia produces visible acceleration.
+      const verticalAccelerationMps2 = clamp(
+        (targetVerticalSpeedMps - state.verticalVelocityMps) /
+          config.verticalSpeedResponseTimeS,
+        -config.maxVerticalAccelerationMps2,
+        config.maxVerticalAccelerationMps2
+      );
+      const tailRotorTorqueNm = -tail.thrustN * config.tailMomentArmM;
+      const windForceLateralN =
+        0.5 *
+        airDensityKgM3 *
+        config.fuselageLateralCd *
+        config.fuselageLateralAreaM2 *
+        bodyWind.y *
+        Math.abs(bodyWind.y);
+      const windTorqueNm = config.centerOfPressureXM * windForceLateralN;
+      const yawRate = state.yawRateRadiansPerSecond;
+      const dampingTorqueNm =
+        -config.yawDampingLinear * yawRate -
+        config.yawDampingQuadratic * yawRate * Math.abs(yawRate);
+      const rotorWindTorqueNm = mainRotorTorqueNm + tailRotorTorqueNm + windTorqueNm;
+      const netTorqueNm = rotorWindTorqueNm + dampingTorqueNm;
+      const effectiveYawInertiaKgM2 = state.yawInertiaKgM2;
+      const yawAccelerationRadS2 = netTorqueNm / effectiveYawInertiaKgM2;
+      const requiredTailThrustN =
+        (mainRotorTorqueNm + windTorqueNm) / config.tailMomentArmM;
+
+      return {
+        worldWind,
+        bodyWind,
+        externalTailVelocity,
+        airDensityKgM3,
+        enginePowerFactor,
+        maximumAvailableEnginePowerW,
+        availableRotorPowerW,
+        mainRotorPowerW,
+        mainRotorThrustKg,
+        mainRotorStillAirThrustKg,
+        mainRotor,
+        hoverPowerW,
+        stillAirHoverPowerW,
+        ogeWind: {
+          ...ogeWind,
+          appliedCorrectionKg: appliedOgeCorrectionKg,
+          liftCapabilityCorrectionKg,
+          actualPowerDeltaW: hoverPowerW - stillAirHoverPowerW,
+          cardinalPowerDeltaW: ogeCardinalPowerDeltaW
+        },
+        verticalSpeedMps: state.verticalVelocityMps,
+        targetVerticalSpeedMps,
+        verticalAccelerationMps2,
+        tailRotorPowerW,
+        tailRotorPowerDemandW,
+        fixedRpmPowerDeficitW:
+          tail.powerDeficitW + mainRotor.powerDeficitW,
+        fixedRpmSustainable:
+          tail.fixedRpmSustainable && mainRotor.fixedRpmSustainable,
+        mainRotorTorqueNm,
+        tailRotorTorqueNm,
+        windTorqueNm,
+        dampingTorqueNm,
+        rotorWindTorqueNm,
+        netTorqueNm,
+        effectiveYawInertiaKgM2,
+        yawAccelerationRadS2,
+        requiredTailThrustN,
+        tail
+      };
+    }
+
+    function yawTrimAtPowerPercent(
+      powerPercent,
+      balanceErrorForModel = model => model.rotorWindTorqueNm
+    ) {
+      const config = MODEL_CONFIG;
+      const pitchLimitDeg = currentTailRotorPitchLimitDeg();
+      const originalPowerPercent = state.enginePowerPercent;
+      const originalPitchDegrees = state.tailRotorPitchDegrees;
+
+      state.enginePowerPercent = clamp(powerPercent, 0, 100);
+
+      const evaluatePitch = pitchDegrees => {
+        state.tailRotorPitchDegrees = pitchDegrees;
+        const model = calculateModel();
+        return {
+          pitchDegrees,
+          model,
+          balanceErrorNm: balanceErrorForModel(model)
+        };
+      };
+
+      let previous = evaluatePitch(config.tailRotorMinPitchDeg);
+      let best = previous;
+      let bracket = null;
+
+      for (
+        let pitchDegrees = config.tailRotorMinPitchDeg + 0.5;
+        pitchDegrees <= pitchLimitDeg + 1e-9;
+        pitchDegrees = Math.min(pitchDegrees + 0.5, pitchLimitDeg)
+      ) {
+        const current = evaluatePitch(pitchDegrees);
+        if (Math.abs(current.balanceErrorNm) < Math.abs(best.balanceErrorNm)) {
+          best = current;
+        }
+        if (
+          previous.balanceErrorNm === 0 ||
+          current.balanceErrorNm === 0 ||
+          Math.sign(previous.balanceErrorNm) !==
+            Math.sign(current.balanceErrorNm)
+        ) {
+          bracket = { low: previous, high: current };
+          break;
+        }
+        if (pitchDegrees === pitchLimitDeg) break;
+        previous = current;
+      }
+
+      if (bracket) {
+        for (let iteration = 0; iteration < 20; iteration += 1) {
+          const midPitchDegrees =
+            (bracket.low.pitchDegrees + bracket.high.pitchDegrees) / 2;
+          const mid = evaluatePitch(midPitchDegrees);
+          best = mid;
+          if (
+            mid.balanceErrorNm === 0 ||
+            Math.sign(mid.balanceErrorNm) ===
+              Math.sign(bracket.low.balanceErrorNm)
+          ) {
+            bracket.low = mid;
+          } else {
+            bracket.high = mid;
+          }
+        }
+      }
+
+      state.enginePowerPercent = originalPowerPercent;
+      state.tailRotorPitchDegrees = originalPitchDegrees;
+      return best;
+    }
+
+    function setEnginePowerFromUser(powerPercent) {
+      state.enginePowerPercent = clamp(
+        Math.round(powerPercent * 10) / 10,
+        0,
+        100
+      );
+
+      if (!state.isPaused) return;
+
+      const trim = yawTrimAtPowerPercent(
+        state.enginePowerPercent,
+        model => model.netTorqueNm
+      );
+      state.tailRotorPitchDegrees = clamp(
+        trim.pitchDegrees,
+        MODEL_CONFIG.tailRotorMinPitchDeg,
+        currentTailRotorPitchLimitDeg()
+      );
+      updatePitchLimitUi();
+    }
+
+    function hoverTrimForCurrentConditions() {
+      const originalPowerPercent = state.enginePowerPercent;
+      const originalPitchDegrees = state.tailRotorPitchDegrees;
+      const targetThrustKg = state.helicopterWeightKg;
+      const maximumTrim = yawTrimAtPowerPercent(100);
+
+      let selectedPowerPercent = 100;
+      if (maximumTrim.model.mainRotorThrustKg > targetThrustKg) {
+        let lowPowerTenthPercent = 0;
+        let highPowerTenthPercent = 1000;
+
+        while (lowPowerTenthPercent < highPowerTenthPercent) {
+          const candidatePowerTenthPercent = Math.floor(
+            (lowPowerTenthPercent + highPowerTenthPercent) / 2
+          );
+          const candidatePercent = candidatePowerTenthPercent / 10;
+          const candidateTrim = yawTrimAtPowerPercent(candidatePercent);
+          if (candidateTrim.model.mainRotorThrustKg < targetThrustKg) {
+            lowPowerTenthPercent = candidatePowerTenthPercent + 1;
+          } else {
+            highPowerTenthPercent = candidatePowerTenthPercent;
+          }
+        }
+
+        const upperPowerPercent = lowPowerTenthPercent / 10;
+        const upperTrim = yawTrimAtPowerPercent(upperPowerPercent);
+        const lowerPowerPercent = Math.max(
+          0,
+          (lowPowerTenthPercent - 1) / 10
+        );
+        const lowerTrim = yawTrimAtPowerPercent(lowerPowerPercent);
+        const upperErrorKg = Math.abs(
+          upperTrim.model.mainRotorThrustKg - targetThrustKg
+        );
+        const lowerErrorKg = Math.abs(
+          lowerTrim.model.mainRotorThrustKg - targetThrustKg
+        );
+        selectedPowerPercent =
+          lowerErrorKg < upperErrorKg
+            ? lowerPowerPercent
+            : upperPowerPercent;
+      }
+
+      const selectedTrim = yawTrimAtPowerPercent(selectedPowerPercent);
+      state.enginePowerPercent = originalPowerPercent;
+      state.tailRotorPitchDegrees = originalPitchDegrees;
+
+      return {
+        powerPercent: selectedPowerPercent,
+        pitchDegrees: clamp(
+          selectedTrim.pitchDegrees,
+          MODEL_CONFIG.tailRotorMinPitchDeg,
+          currentTailRotorPitchLimitDeg()
+        )
+      };
+    }
+
+    function handleNumericalError() {
+      state.headingRadians = state.lastFiniteHeadingRadians;
+      state.yawRateRadiansPerSecond = state.lastFiniteYawRateRadiansPerSecond;
+      state.verticalVelocityMps = state.lastFiniteVerticalVelocityMps;
+      state.isPaused = true;
+      state.hasError = true;
+      elements.errorBanner.classList.add("visible");
+      updatePauseUi();
+    }
+
+    function stepPhysics(dt) {
+      const model = calculateModel();
+      const valuesToCheck = [
+        model.netTorqueNm,
+        model.yawAccelerationRadS2,
+        model.verticalSpeedMps,
+        model.targetVerticalSpeedMps,
+        model.verticalAccelerationMps2,
+        model.tail.thrustN,
+        model.tail.shaftPowerW,
+        model.mainRotorThrustKg,
+        model.ogeWind.correctionKg,
+        model.ogeWind.appliedCorrectionKg,
+        model.ogeWind.actualPowerDeltaW,
+        model.mainRotor.figureOfMerit,
+        model.tail.figureOfMerit,
+        model.fixedRpmPowerDeficitW,
+        model.tail.meanAlphaRadians,
+        model.tail.inducedVelocityMps,
+        model.airDensityKgM3,
+        model.enginePowerFactor
+      ];
+
+      if (!valuesToCheck.every(Number.isFinite)) {
+        handleNumericalError();
+        return;
+      }
+
+      state.tailRotorInducedVelocityMps = model.tail.inducedVelocityMps;
+      state.yawRateRadiansPerSecond += model.yawAccelerationRadS2 * dt;
+      state.verticalVelocityMps = clamp(
+        state.verticalVelocityMps + model.verticalAccelerationMps2 * dt,
+        -MODEL_CONFIG.maxVerticalSpeedMps,
+        MODEL_CONFIG.maxVerticalSpeedMps
+      );
+      state.headingRadians = wrapRadians(
+        state.headingRadians + state.yawRateRadiansPerSecond * dt
+      );
+      state.simulationTimeSeconds += dt;
+      state.rotorPhaseRadians = wrapRadians(
+        state.rotorPhaseRadians + MODEL_CONFIG.symbolicMainRotorRadS * dt
+      );
+
+      if (
+        !Number.isFinite(state.headingRadians) ||
+        !Number.isFinite(state.yawRateRadiansPerSecond) ||
+        !Number.isFinite(state.verticalVelocityMps)
+      ) {
+        handleNumericalError();
+        return;
+      }
+
+      state.lastFiniteHeadingRadians = state.headingRadians;
+      state.lastFiniteYawRateRadiansPerSecond = state.yawRateRadiansPerSecond;
+      state.lastFiniteVerticalVelocityMps = state.verticalVelocityMps;
+      state.latest = calculateModel();
+    }
+
+    function yawRatePresentation() {
+      const signedDeg = state.yawRateRadiansPerSecond * RAD;
+      if (Math.abs(signedDeg) < MODEL_CONFIG.stableYawRateDegS) {
+        return { magnitude: 0, direction: "STABLE", word: "stable" };
+      }
+      if (signedDeg > 0) {
+        return { magnitude: Math.abs(signedDeg), direction: "CCW", word: "counterclockwise" };
+      }
+      return { magnitude: Math.abs(signedDeg), direction: "CW", word: "clockwise" };
+    }
+
+    function verticalRatePresentation(model) {
+      const signedSpeedMps = model.verticalSpeedMps;
+      if (Math.abs(signedSpeedMps) < MODEL_CONFIG.stableVerticalSpeedMps) {
+        return { magnitude: 0, label: "HOVER", state: "hover", word: "hovering" };
+      }
+      if (signedSpeedMps > 0) {
+        return {
+          magnitude: signedSpeedMps,
+          label: "CLIMB",
+          state: "climb",
+          word: "climbing"
+        };
+      }
+      return {
+        magnitude: Math.abs(signedSpeedMps),
+        label: "DESCENT",
+        state: "descent",
+        word: "descending"
+      };
+    }
+
+    function ltePresentation(model) {
+      const fraction = model.tail.stalledElementFraction;
+      if (fraction >= MODEL_CONFIG.lteFractionThreshold) {
+        return {
+          text: "LTE · thrust loss",
+          telemetry: "LTE — thrust loss",
+          state: "lte"
+        };
+      }
+      if (fraction > 0) {
+        return {
+          text: "LTE onset",
+          telemetry: "LTE onset",
+          state: "onset"
+        };
+      }
+      return {
+        text: "Normal flow",
+        telemetry: "Normal",
+        state: "normal"
+      };
+    }
+
+    function statusPresentation(model) {
+      const yaw = yawRatePresentation();
+      const lte = ltePresentation(model);
+      const torqueBalanced = Math.abs(model.rotorWindTorqueNm) < MODEL_CONFIG.balancedMomentNm;
+
+      if (!state.hasStarted) {
+        return {
+          text: "Click Start button to start simulation",
+          state: "paused"
+        };
+      }
+      if (state.isPaused) {
+        return { text: "Simulation paused", state: "paused" };
+      }
+      if (!model.fixedRpmSustainable) {
+        return {
+          text: "POWER DEFICIT · fixed RPM unsustainable",
+          state: "lte"
+        };
+      }
+      if (lte.state === "lte") {
+        return { text: "LTE · tail thrust loss", state: "lte" };
+      }
+      if (lte.state === "onset") {
+        return { text: "Critical α exceeded", state: "active" };
+      }
+      if (torqueBalanced && yaw.direction === "STABLE") {
+        return { text: "Yaw moments balanced", state: "balanced" };
+      }
+      if (model.netTorqueNm > MODEL_CONFIG.balancedMomentNm) {
+        return { text: "Net moment · CCW", state: "active" };
+      }
+      if (model.netTorqueNm < -MODEL_CONFIG.balancedMomentNm) {
+        return { text: "Net moment · CW", state: "active" };
+      }
+      return { text: "Constant yaw rate", state: "active" };
+    }
+
+    function explanationFor(model) {
+      const yaw = yawRatePresentation();
+      const lte = ltePresentation(model);
+      const accelerationDeg = model.yawAccelerationRadS2 * RAD;
+      const accelerationIsSmall = Math.abs(model.netTorqueNm) < MODEL_CONFIG.balancedMomentNm;
+      const yawIsStable = yaw.direction === "STABLE";
+
+      if (!model.fixedRpmSustainable) {
+        return `The aerodynamic power demand exceeds the selected available power by ${Math.round(model.fixedRpmPowerDeficitW / 1000).toLocaleString("en-US")} kW. The displayed rotor speeds are the fixed-RPM assumption; this steady operating point cannot be sustained. Rotor-speed droop is not simulated.`;
+      }
+
+      if (lte.state === "lte") {
+        const percent = Math.round(model.tail.stalledElementFraction * 100);
+        return `${percent}% of sampled blade elements are beyond the 12° critical angle. The simplified post-stall model has sharply reduced tail-rotor thrust, allowing yaw to build if the remaining moments are not balanced.`;
+      }
+
+      if (lte.state === "onset") {
+        return "Part of the tail rotor has crossed the critical blade angle. The thrust curve is beginning to roll over toward the simplified LTE region.";
+      }
+
+      if (yawIsStable && accelerationIsSmall) {
+        return "The yaw moments are balanced. Heading is stable.";
+      }
+
+      if (yawIsStable) {
+        const direction = accelerationDeg > 0 ? "counterclockwise" : "clockwise";
+        return `The helicopter is nearly stationary, but the current moment is starting a ${direction} yaw.`;
+      }
+
+      if (accelerationIsSmall) {
+        return `The helicopter is rotating ${yaw.word} at an almost constant rate because the net yawing moment is near zero.`;
+      }
+
+      const accelerationWord = accelerationDeg > 0 ? "counterclockwise" : "clockwise";
+      const sameDirection =
+        (yaw.direction === "CCW" && accelerationDeg > 0) ||
+        (yaw.direction === "CW" && accelerationDeg < 0);
+
+      if (sameDirection) {
+        return `The helicopter is rotating ${yaw.word} and the ${accelerationWord} net moment is increasing that rotation. Wind and yaw-induced airflow are included in the tail-rotor angle of attack.`;
+      }
+
+      return `The helicopter is still rotating ${yaw.word}, but the ${accelerationWord} net moment is slowing it down. The tail rotor responds to both wind and tail-hub motion.`;
+    }
+
+    function updateWindGraphic(model) {
+      const centerX = 128;
+      const centerY = 114;
+      const wind = model.worldWind;
+      const speed = state.windSpeedMps;
+      const length = speed <= 0.01 ? 0 : 36 + 3.5 * speed;
+      const norm = speed > 0 ? speed : 1;
+      const dx = wind.x / norm * length;
+      const dy = -wind.y / norm * length;
+      const startX = centerX - dx / 2;
+      const startY = centerY - dy / 2;
+      const endX = centerX + dx / 2;
+      const endY = centerY + dy / 2;
+
+      elements.windLine.setAttribute("x1", startX.toFixed(2));
+      elements.windLine.setAttribute("y1", startY.toFixed(2));
+      elements.windLine.setAttribute("x2", endX.toFixed(2));
+      elements.windLine.setAttribute("y2", endY.toFixed(2));
+      elements.windLine.setAttribute("opacity", speed <= 0.01 ? "0.18" : "1");
+      elements.windLabel.textContent = speed <= 0.01 ? "Calm" : `${speed.toFixed(1)} m/s`;
+      elements.windSubLabel.textContent =
+        `Wind from ${compassPoint(state.windFromDegrees)} · ${String(Math.round(state.windFromDegrees)).padStart(3, "0")}°`;
+    }
+
+    function momentArcPath(radius, spanDegrees, direction) {
+      const centerX = 380;
+      const centerY = 310;
+      const startDegrees = direction === "ccw" ? 0 : 180;
+      const endDegrees = direction === "ccw"
+        ? -spanDegrees
+        : 180 + spanDegrees;
+      const startRadians = startDegrees * DEG;
+      const endRadians = endDegrees * DEG;
+      const startX = centerX + radius * Math.cos(startRadians);
+      const startY = centerY + radius * Math.sin(startRadians);
+      const endX = centerX + radius * Math.cos(endRadians);
+      const endY = centerY + radius * Math.sin(endRadians);
+      const largeArc = spanDegrees > 180 ? 1 : 0;
+      const sweep = direction === "ccw" ? 0 : 1;
+
+      return `M ${startX.toFixed(2)} ${startY.toFixed(2)} ` +
+        `A ${radius.toFixed(2)} ${radius.toFixed(2)} 0 ${largeArc} ${sweep} ` +
+        `${endX.toFixed(2)} ${endY.toFixed(2)}`;
+    }
+
+    function updateVectors(model) {
+      const referenceTailThrustN =
+        Math.max(1, state.nominalTrim?.tail.thrustN || 10420);
+      const actualLength = clamp(
+        28 + Math.abs(model.tail.thrustN) / referenceTailThrustN * 90,
+        28,
+        132
+      );
+      const actualSign = model.tail.thrustN >= 0 ? -1 : 1;
+
+      elements.actualThrustVector.setAttribute("x2", (actualSign * actualLength).toFixed(2));
+      elements.thrustVectorLabel.setAttribute("x", (actualSign * (actualLength + 10)).toFixed(2));
+      elements.thrustVectorLabel.setAttribute("text-anchor", actualSign < 0 ? "end" : "start");
+      elements.thrustVectorLabel.textContent = `${Math.round(model.tail.thrustN).toLocaleString("en-US")} N`;
+
+      const mainMaximumNm = TOTAL_ENGINE_POWER_W / MAIN_ROTOR_OMEGA_RAD_S;
+      const mainNormalized = clamp(
+        Math.abs(model.mainRotorTorqueNm) / mainMaximumNm,
+        0,
+        1
+      );
+      const mainRadius = 78 + 28 * mainNormalized;
+      const mainSpan = 24 + 88 * mainNormalized;
+      const mainStrokeWidth = 1.8 + 3.2 * mainNormalized;
+      const mainOpacity = model.mainRotorTorqueNm < 1
+        ? 0
+        : 0.28 + 0.72 * mainNormalized;
+      elements.mainTorqueArc.setAttribute(
+        "d",
+        momentArcPath(mainRadius, mainSpan, "ccw")
+      );
+      elements.mainTorqueArc.style.strokeWidth =
+        mainStrokeWidth.toFixed(2);
+      elements.mainTorqueArc.style.opacity = mainOpacity.toFixed(2);
+      elements.mainTorqueLabel.setAttribute(
+        "x",
+        (380 + mainRadius).toFixed(2)
+      );
+      elements.mainTorqueLabel.setAttribute(
+        "y",
+        (310 - 10 - 5 * mainNormalized).toFixed(2)
+      );
+      elements.mainTorqueLabel.style.opacity =
+        model.mainRotorTorqueNm < 1 ? "0" : "1";
+
+      const absMoment = Math.abs(model.netTorqueNm);
+      const netNormalized = clamp(
+        absMoment / mainMaximumNm,
+        0,
+        1
+      );
+      const netRadius = 112 + 42 * netNormalized;
+      const netSpan = 26 + 124 * netNormalized;
+      const netStrokeWidth = 2.2 + 4.3 * netNormalized;
+      const opacity = absMoment < MODEL_CONFIG.balancedMomentNm
+        ? 0
+        : 0.38 + 0.62 * netNormalized;
+      elements.netArcCcw.setAttribute(
+        "d",
+        momentArcPath(netRadius, netSpan, "ccw")
+      );
+      elements.netArcCw.setAttribute(
+        "d",
+        momentArcPath(netRadius, netSpan, "cw")
+      );
+      elements.netArcCcw.style.strokeWidth =
+        netStrokeWidth.toFixed(2);
+      elements.netArcCw.style.strokeWidth =
+        netStrokeWidth.toFixed(2);
+      elements.netArcCcw.setAttribute(
+        "opacity",
+        model.netTorqueNm > 0 ? opacity.toFixed(2) : "0"
+      );
+      elements.netArcCw.setAttribute(
+        "opacity",
+        model.netTorqueNm < 0 ? opacity.toFixed(2) : "0"
+      );
+    }
+
+    function updateLteChart(model) {
+      const plot = LTE_CHART_PLOT;
+      const mapX = value =>
+        plot.left +
+        (value - plot.xMin) / (plot.xMax - plot.xMin) *
+        (plot.right - plot.left);
+      const mapY = value =>
+        plot.bottom -
+        (value - plot.yMin) / (plot.yMax - plot.yMin) *
+        (plot.bottom - plot.top);
+
+      if (
+        chartVisualState.referenceYCoordinates.length === 0 ||
+        chartVisualState.referenceMsaAltitudeM !== state.msaAltitudeM ||
+        chartVisualState.referenceAirTemperatureC !== state.airTemperatureC
+      ) {
+        const curvePoints = [];
+        const sampleCount = 52;
+        const chartBase = tailRotorElements(
+          state.nominalTrim.pitchRadians,
+          model.tail.inducedVelocityMps,
+          model.externalTailVelocity,
+          true
+        );
+        const basePeakAlpha = chartBase.maxAlphaRadians;
+
+        for (let index = 0; index <= sampleCount; index += 1) {
+          const alphaDegrees =
+            plot.xMin + index / sampleCount * (plot.xMax - plot.xMin);
+          const alphaOffset = alphaDegrees * DEG - basePeakAlpha;
+          let thrustN = 0;
+
+          for (const bladeElement of chartBase.chartElements) {
+            const shiftedAlpha = bladeElement.alphaRadians + alphaOffset;
+            const cl = sectionLiftCoefficient(shiftedAlpha);
+            const cd = MODEL_CONFIG.cd0 + MODEL_CONFIG.dragPolarK * cl * cl;
+            thrustN +=
+              bladeElement.liftFactorNPerCl * cl -
+              bladeElement.dragFactorNPerCd * cd;
+          }
+
+          curvePoints.push({
+            alphaDegrees,
+            thrustN: thrustN / MODEL_CONFIG.azimuthSamples
+          });
+        }
+
+        chartVisualState.xCoordinates =
+          curvePoints.map(point => mapX(point.alphaDegrees));
+        chartVisualState.referenceYCoordinates =
+          curvePoints.map(point => mapY(point.thrustN));
+        chartVisualState.referenceMsaAltitudeM = state.msaAltitudeM;
+        chartVisualState.referenceAirTemperatureC = state.airTemperatureC;
+      }
+
+      const currentAlphaDegrees = model.tail.maxAlphaRadians * RAD;
+      const currentX = clamp(mapX(currentAlphaDegrees), plot.left, plot.right);
+      const currentY = clamp(mapY(model.tail.thrustN), plot.top, plot.bottom);
+      const lte = ltePresentation(model);
+
+      chartVisualState.targetYCoordinates =
+        chartVisualState.referenceYCoordinates.slice();
+      chartVisualState.targetPointX = currentX;
+      chartVisualState.targetPointY = currentY;
+      chartVisualState.targetAlphaDegrees = currentAlphaDegrees;
+      chartVisualState.targetThrustN = model.tail.thrustN;
+
+      if (chartVisualState.rawLteState !== lte.state) {
+        chartVisualState.rawLteState = lte.state;
+        chartVisualState.rawStateElapsedS = 0;
+      }
+
+      if (!chartVisualState.initialized) {
+        chartVisualState.displayedYCoordinates =
+          chartVisualState.targetYCoordinates.slice();
+        chartVisualState.displayedPointX = currentX;
+        chartVisualState.displayedPointY = currentY;
+        chartVisualState.displayedAlphaDegrees = currentAlphaDegrees;
+        chartVisualState.displayedThrustN = model.tail.thrustN;
+        chartVisualState.visibleLteState = lte.state;
+        chartVisualState.initialized = true;
+      }
+    }
+
+    function renderLteChart(deltaSeconds) {
+      if (!chartVisualState.initialized) return;
+
+      const plot = LTE_CHART_PLOT;
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const blend = reducedMotion
+        ? 1
+        : 1 - Math.exp(-Math.max(deltaSeconds, 0) / 0.18);
+
+      for (
+        let index = 0;
+        index < chartVisualState.targetYCoordinates.length;
+        index += 1
+      ) {
+        const target = chartVisualState.targetYCoordinates[index];
+        const current = chartVisualState.displayedYCoordinates[index] ?? target;
+        chartVisualState.displayedYCoordinates[index] =
+          current + (target - current) * blend;
+      }
+
+      chartVisualState.displayedPointX +=
+        (chartVisualState.targetPointX - chartVisualState.displayedPointX) * blend;
+      chartVisualState.displayedPointY +=
+        (chartVisualState.targetPointY - chartVisualState.displayedPointY) * blend;
+      chartVisualState.displayedAlphaDegrees +=
+        (chartVisualState.targetAlphaDegrees -
+          chartVisualState.displayedAlphaDegrees) * blend;
+      chartVisualState.displayedThrustN +=
+        (chartVisualState.targetThrustN -
+          chartVisualState.displayedThrustN) * blend;
+
+      const pathData = chartVisualState.xCoordinates
+        .map((x, index) => {
+          const y = chartVisualState.displayedYCoordinates[index];
+          return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+        })
+        .join(" ");
+      elements.lteCurvePath.setAttribute("d", pathData);
+
+      const currentX = chartVisualState.displayedPointX;
+      const currentY = chartVisualState.displayedPointY;
+      elements.chartGuideVertical.setAttribute("x1", currentX.toFixed(2));
+      elements.chartGuideVertical.setAttribute("x2", currentX.toFixed(2));
+      elements.chartGuideVertical.setAttribute("y1", plot.bottom);
+      elements.chartGuideVertical.setAttribute("y2", currentY.toFixed(2));
+      elements.chartGuideHorizontal.setAttribute("x1", plot.left);
+      elements.chartGuideHorizontal.setAttribute("x2", currentX.toFixed(2));
+      elements.chartGuideHorizontal.setAttribute("y1", currentY.toFixed(2));
+      elements.chartGuideHorizontal.setAttribute("y2", currentY.toFixed(2));
+      elements.chartCurrentPoint.setAttribute("cx", currentX.toFixed(2));
+      elements.chartCurrentPoint.setAttribute("cy", currentY.toFixed(2));
+
+      chartVisualState.rawStateElapsedS += deltaSeconds;
+      const rawState = chartVisualState.rawLteState;
+      const visibleState = chartVisualState.visibleLteState;
+      if (rawState === "lte" && visibleState !== "lte") {
+        if (visibleState === "normal") {
+          chartVisualState.visibleLteState = "onset";
+          chartVisualState.rawStateElapsedS = 0;
+        } else if (chartVisualState.rawStateElapsedS >= 0.35) {
+          chartVisualState.visibleLteState = "lte";
+        }
+      } else if (rawState === "normal" && visibleState !== "normal") {
+        if (visibleState === "lte") {
+          chartVisualState.visibleLteState = "onset";
+          chartVisualState.rawStateElapsedS = 0;
+        } else if (chartVisualState.rawStateElapsedS >= 0.35) {
+          chartVisualState.visibleLteState = "normal";
+        }
+      } else if (rawState === "onset") {
+        chartVisualState.visibleLteState = "onset";
+      }
+
+      const visualState = chartVisualState.visibleLteState;
+      const visualText = visualState === "lte"
+        ? "LTE · thrust loss"
+        : visualState === "onset"
+          ? "LTE onset"
+          : "Normal flow";
+      elements.chartCurrentPoint.classList.toggle("lte", visualState === "lte");
+      elements.lteStateBadge.textContent = visualText;
+      elements.lteStateBadge.dataset.state = visualState;
+
+      const placeLabelLeft = currentX > plot.right - 125;
+      elements.chartCurrentLabel.setAttribute(
+        "x",
+        (currentX + (placeLabelLeft ? -10 : 10)).toFixed(2)
+      );
+      elements.chartCurrentLabel.setAttribute(
+        "y",
+        clamp(currentY - 10, plot.top + 11, plot.bottom - 8).toFixed(2)
+      );
+      elements.chartCurrentLabel.setAttribute(
+        "text-anchor",
+        placeLabelLeft ? "end" : "start"
+      );
+      elements.chartCurrentLabel.textContent =
+        `${chartVisualState.displayedAlphaDegrees.toFixed(1)}° · ` +
+        `${Math.round(chartVisualState.displayedThrustN).toLocaleString("en-US")} N`;
+    }
+
+    function updateSimulationGraphics(model) {
+      const headingVisualDegrees = -state.headingRadians * RAD;
+      const rotorVisualDegrees =
+        state.rotorPhaseRadians * RAD - headingVisualDegrees;
+      elements.helicopterRotation.setAttribute("transform", `rotate(${headingVisualDegrees.toFixed(3)})`);
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        elements.mainRotorVisual.setAttribute("transform", `rotate(${rotorVisualDegrees.toFixed(3)})`);
+      }
+
+      updateWindGraphic(model);
+      updateVectors(model);
+      const verticalRate = verticalRatePresentation(model);
+      elements.verticalRateReadout.dataset.state = verticalRate.state;
+      elements.verticalRateValue.textContent =
+        `${verticalRate.label} ${verticalRate.magnitude.toFixed(1)} m/s`;
+      elements.verticalRateArrow.setAttribute(
+        "d",
+        verticalRate.state === "climb"
+          ? "M 15 37 V 13 M 8 20 L 15 13 L 22 20"
+          : verticalRate.state === "descent"
+            ? "M 15 13 V 37 M 8 30 L 15 37 L 22 30"
+            : "M 8 25 H 22"
+      );
+    }
+
+    function updatePauseUi() {
+      elements.pauseButton.textContent = !state.hasStarted
+        ? "Start"
+        : state.isPaused
+          ? "Resume"
+          : "Pause";
+      elements.pauseButton.setAttribute(
+        "aria-pressed",
+        String(state.hasStarted && state.isPaused)
+      );
+      const inputsLocked = !state.isPaused;
+      const pauseHint = "Pause the simulation to adjust this control.";
+      const pausableInputs = [
+        elements.weightRange,
+        elements.weightNumber,
+        elements.angularMomentumRange,
+        elements.angularMomentumNumber,
+        elements.msaAltitudeRange,
+        elements.msaAltitudeNumber,
+        elements.airTemperatureRange,
+        elements.airTemperatureNumber,
+        elements.windSpeedRange,
+        elements.windSpeedNumber,
+        elements.windDirectionRange,
+        elements.windDirectionNumber
+      ];
+
+      elements.controlsPanel.dataset.inputsLocked = String(inputsLocked);
+      pausableInputs.forEach(input => {
+        input.disabled = inputsLocked;
+        if (inputsLocked) {
+          input.title = pauseHint;
+        } else {
+          input.removeAttribute("title");
+        }
+      });
+    }
+
+    function updateNumericUi(model, announce) {
+      const yaw = yawRatePresentation();
+      const verticalRate = verticalRatePresentation(model);
+      const status = statusPresentation(model);
+      const compassHeading = wrapDegrees(-state.headingRadians * RAD);
+      const meanAoaDeg = model.tail.meanAlphaRadians * RAD;
+      const minAoaDeg = model.tail.minAlphaRadians * RAD;
+      const maxAoaDeg = model.tail.maxAlphaRadians * RAD;
+      const lte = ltePresentation(model);
+
+      elements.statusPill.textContent = status.text;
+      elements.statusPill.dataset.state = status.state;
+      elements.headingValue.textContent =
+        `${compassHeading.toFixed(1).padStart(5, "0")}° ${compassPoint(compassHeading)}`;
+      elements.yawRateValue.textContent = yaw.magnitude.toFixed(1);
+      elements.yawDirectionTag.textContent = yaw.direction;
+      elements.actualThrustValue.textContent =
+        `${Math.round(model.tail.thrustN).toLocaleString("en-US")} N`;
+      elements.requiredThrustValue.textContent =
+        `${Math.round(model.requiredTailThrustN).toLocaleString("en-US")} N`;
+      elements.meanAoaValue.textContent = `${meanAoaDeg.toFixed(1)}°`;
+      elements.aoaRangeValue.textContent =
+        `${minAoaDeg.toFixed(1)}° — ${maxAoaDeg.toFixed(1)}°`;
+      elements.axialFlowValue.textContent =
+        `${model.tail.externalAxialVelocityMps >= 0 ? "+" : "−"}${Math.abs(model.tail.externalAxialVelocityMps).toFixed(1)} m/s`;
+      elements.pitchValue.textContent =
+        `${(currentTailRotorPitchRadians() * RAD).toFixed(1)}°`;
+      const pitchLimitDeg = currentTailRotorPitchLimitDeg();
+      elements.spuuPitchLimitValue.textContent = `${pitchLimitDeg.toFixed(1)}°`;
+      elements.spuuPitchLimitValue.classList.toggle(
+        "amber",
+        state.tailRotorPitchDegrees >= pitchLimitDeg - 0.05
+      );
+      elements.mainRotorThrustValue.textContent =
+        `${Math.round(model.mainRotorThrustKg).toLocaleString("en-US")} kg`;
+      elements.helicopterWeightValue.textContent =
+        `${(state.helicopterWeightKg / 1000).toFixed(1).replace(".", ",")} t`;
+      elements.msaAltitudeValue.textContent =
+        `${Math.round(state.msaAltitudeM).toLocaleString("en-US")} m`;
+      elements.airTemperatureValue.textContent =
+        `${state.airTemperatureC.toFixed(1)}\u00B0C`;
+      elements.airDensityValue.textContent =
+        `${model.airDensityKgM3.toFixed(3)} kg/m³`;
+      elements.availableEnginePowerValue.textContent =
+        `${Math.round(
+          model.maximumAvailableEnginePowerW /
+          MODEL_CONFIG.metricHorsepowerWatts
+        ).toLocaleString("en-US")} k.s.`;
+      elements.powerSplitValue.textContent =
+        `${Math.round(model.mainRotorPowerW / MODEL_CONFIG.metricHorsepowerWatts).toLocaleString("en-US")} / ` +
+        `${Math.round(model.tailRotorPowerW / MODEL_CONFIG.metricHorsepowerWatts).toLocaleString("en-US")} k.s.`;
+      elements.rotorEfficiencyValue.textContent =
+        `${model.mainRotor.figureOfMerit.toFixed(2)} / ` +
+        `${model.tail.figureOfMerit.toFixed(2)} FM`;
+      elements.rotorLossPowerValue.textContent =
+        `${Math.round(model.mainRotor.aerodynamicLossPowerW / 1000).toLocaleString("en-US")} / ` +
+        `${Math.round(model.tail.aerodynamicLossPowerW / 1000).toLocaleString("en-US")} kW`;
+      elements.tailRotorRpmValue.textContent =
+        `${Math.round(model.tail.rotorRpm).toLocaleString("en-US")} rpm`;
+      elements.stalledFractionValue.textContent =
+        `${Math.round(model.tail.stalledElementFraction * 100)}%`;
+      elements.lteTelemetryValue.textContent = lte.telemetry;
+      elements.lteTelemetryValue.classList.toggle("amber", lte.state === "onset");
+      elements.lteTelemetryValue.classList.toggle("blue", lte.state === "normal");
+      elements.lteTelemetryValue.classList.toggle("red", lte.state === "lte");
+      elements.ogeActualCorrectionValue.textContent =
+        `${model.ogeWind.relativeLabel} · ` +
+        formatOgeCorrection(
+          model.ogeWind.appliedCorrectionKg,
+          model.ogeWind.actualPowerDeltaW
+        );
+      elements.mainTorqueValue.textContent =
+        `${formatSignedInteger(model.mainRotorTorqueNm)} N·m`;
+      elements.tailTorqueValue.textContent =
+        `${formatSignedInteger(model.tailRotorTorqueNm)} N·m`;
+      elements.windTorqueValue.textContent =
+        `${formatSignedInteger(model.windTorqueNm)} N·m`;
+      elements.netTorqueValue.textContent =
+        `${formatSignedInteger(model.netTorqueNm)} N·m`;
+      elements.explanationText.textContent = explanationFor(model);
+      if (announce) {
+        elements.accessibleSummary.textContent =
+          `Yaw rate ${yaw.magnitude.toFixed(1)} degrees per second ${yaw.word}. ` +
+          `The helicopter is ${verticalRate.word} at ${verticalRate.magnitude.toFixed(1)} meters per second. ` +
+          `Helicopter weight ${(state.helicopterWeightKg / 1000).toFixed(1)} metric tonnes. ` +
+          `Yaw moment of inertia ${Math.round(state.yawInertiaKgM2)} kilogram square meters. ` +
+          `MSA altitude ${Math.round(state.msaAltitudeM)} meters. ` +
+          `Outside air temperature ${state.airTemperatureC.toFixed(1)} degrees Celsius. ` +
+          `SPUU-52 maximum tail-rotor pitch ${pitchLimitDeg.toFixed(1)} degrees. ` +
+           `Air density ${model.airDensityKgM3.toFixed(3)} kilograms per cubic meter. ` +
+          `Applied OGE wind correction ${Math.round(model.ogeWind.appliedCorrectionKg)} kilograms. ` +
+          `Actual tail-rotor thrust ${Math.round(model.tail.thrustN)} newtons. ` +
+          `Mean blade angle of attack ${meanAoaDeg.toFixed(1)} degrees. ` +
+          `Simplified LTE state ${lte.telemetry}.`;
+      }
+    }
+
+    function updatePitchLimitUi() {
+      applyTailRotorPitchLimit();
+      const pitchLimitDeg = currentTailRotorPitchLimitDeg();
+      const formattedLimit = pitchLimitDeg.toFixed(1);
+      elements.pedalRange.max = formattedLimit;
+      elements.pedalNumber.max = formattedLimit;
+      elements.pedalRange.setAttribute("aria-valuemax", formattedLimit);
+      elements.pedalRange.setAttribute(
+        "aria-label",
+        `Tail-rotor pitch from minus six to the SPUU-52 limit of ${formattedLimit} degrees`
+      );
+      elements.pedalNumber.setAttribute(
+        "aria-label",
+        `Tail-rotor blade pitch in degrees; SPUU-52 maximum ${formattedLimit} degrees`
+      );
+      elements.pitchLimitScale.textContent =
+        `SPUU-52 max ${formattedLimit}°`;
+      elements.pedalRange.value = state.tailRotorPitchDegrees.toFixed(1);
+      elements.pedalNumber.value = state.tailRotorPitchDegrees.toFixed(1);
+    }
+
+    function updateControlUi() {
+      updatePitchLimitUi();
+      elements.pedalRange.value = state.tailRotorPitchDegrees.toFixed(1);
+      elements.pedalNumber.value = state.tailRotorPitchDegrees.toFixed(1);
+      elements.thrustRange.value = state.enginePowerPercent.toFixed(1);
+      elements.thrustNumber.value = state.enginePowerPercent.toFixed(1);
+      elements.weightRange.value = (state.helicopterWeightKg / 1000).toFixed(1);
+      elements.weightNumber.value =
+        (state.helicopterWeightKg / 1000).toFixed(1).replace(".", ",");
+      updateAngularMomentumControlUi();
+      updateAtmosphereControlUi();
+      elements.windSpeedRange.value = String(state.windSpeedMps);
+      elements.windSpeedNumber.value = String(state.windSpeedMps);
+      elements.windDirectionRange.value = String(Math.round(state.windFromDegrees));
+      elements.windDirectionNumber.value = String(Math.round(state.windFromDegrees));
+      elements.compassArrow.style.transform = `rotate(${state.windFromDegrees}deg)`;
+      elements.directionReadout.textContent =
+        `${String(Math.round(state.windFromDegrees)).padStart(3, "0")}° ` +
+        `${compassPoint(state.windFromDegrees)} · wind from`;
+    }
+
+    function updateAngularMomentumControlUi() {
+      const bounds = yawInertiaBoundsForWeight();
+      const midpoint = (bounds.min + bounds.max) / 2;
+      const boundsTonnesM2 = {
+        min: bounds.min / 1000,
+        max: bounds.max / 1000
+      };
+      const formattedValue = (state.yawInertiaKgM2 / 1000).toFixed(1);
+
+      elements.angularMomentumRange.min = String(boundsTonnesM2.min);
+      elements.angularMomentumRange.max = String(boundsTonnesM2.max);
+      elements.angularMomentumRange.value = formattedValue;
+      elements.angularMomentumNumber.min = String(boundsTonnesM2.min);
+      elements.angularMomentumNumber.max = String(boundsTonnesM2.max);
+      elements.angularMomentumNumber.value = formattedValue;
+      elements.angularMomentumMinScale.textContent =
+        Math.round(boundsTonnesM2.min).toLocaleString("en-US");
+      elements.angularMomentumMidScale.textContent =
+        Math.round(midpoint / 1000).toLocaleString("en-US");
+      elements.angularMomentumMaxScale.textContent =
+        `${Math.round(boundsTonnesM2.max).toLocaleString("en-US")} t\u00B7m\u00B2`;
+    }
+
+    function updateAtmosphereControlUi() {
+      elements.msaAltitudeRange.value = String(state.msaAltitudeM);
+      elements.msaAltitudeNumber.value = String(state.msaAltitudeM);
+      elements.airTemperatureRange.value =
+        state.airTemperatureC.toFixed(1);
+      elements.airTemperatureNumber.value =
+        state.airTemperatureC.toFixed(1);
+    }
+
+    function recalculateAndRender(announce = false) {
+      const model = calculateModel();
+      state.latest = model;
+      updateSimulationGraphics(model);
+      updateNumericUi(model, announce);
+      updateLteChart(model);
+    }
+
+    let pendingControlRenderFrame = null;
+    let pendingControlAnnouncement = false;
+
+    function scheduleControlRecalculation(announce = false) {
+      pendingControlAnnouncement =
+        pendingControlAnnouncement || announce;
+
+      if (!state.isPaused && !announce) {
+        state.latest = null;
+        return;
+      }
+
+      if (pendingControlRenderFrame !== null) return;
+
+      pendingControlRenderFrame = window.requestAnimationFrame(() => {
+        pendingControlRenderFrame = null;
+        const shouldAnnounce = pendingControlAnnouncement;
+        pendingControlAnnouncement = false;
+        recalculateAndRender(shouldAnnounce);
+      });
+    }
+
+    function enableRangePointerDrag(rangeElement) {
+      let activePointerId = null;
+      const isVertical = rangeElement.getAttribute("orient") === "vertical";
+
+      const updateFromPointer = event => {
+        const rect = rangeElement.getBoundingClientRect();
+        const min = Number.parseFloat(rangeElement.min);
+        const max = Number.parseFloat(rangeElement.max);
+        const step = Number.parseFloat(rangeElement.step) || 1;
+        const axisLength = isVertical ? rect.height : rect.width;
+        const thumbRadius = Math.min(9, axisLength / 2);
+        const usableLength = Math.max(1, axisLength - 2 * thumbRadius);
+        const pointerPosition = isVertical
+          ? rect.bottom - event.clientY
+          : event.clientX - rect.left;
+        const ratio = clamp(
+          (pointerPosition - thumbRadius) / usableLength,
+          0,
+          1
+        );
+        const stepsFromMin = Math.round((min + ratio * (max - min) - min) / step);
+        const value = clamp(min + stepsFromMin * step, min, max);
+
+        rangeElement.value = String(Math.round(value * 1000000) / 1000000);
+        rangeElement.dispatchEvent(new Event("input", { bubbles: true }));
+      };
+
+      rangeElement.addEventListener("dragstart", event => {
+        event.preventDefault();
+      });
+
+      rangeElement.addEventListener("pointerdown", event => {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        activePointerId = event.pointerId;
+        rangeElement.focus({ preventScroll: true });
+        rangeElement.setPointerCapture(event.pointerId);
+        updateFromPointer(event);
+        event.preventDefault();
+      });
+
+      rangeElement.addEventListener("pointermove", event => {
+        if (event.pointerId !== activePointerId) return;
+        updateFromPointer(event);
+        event.preventDefault();
+      });
+
+      const finishPointerDrag = event => {
+        if (event.pointerId !== activePointerId) return;
+        updateFromPointer(event);
+        activePointerId = null;
+        if (rangeElement.hasPointerCapture(event.pointerId)) {
+          rangeElement.releasePointerCapture(event.pointerId);
+        }
+        rangeElement.dispatchEvent(new Event("change", { bubbles: true }));
+        event.preventDefault();
+      };
+
+      rangeElement.addEventListener("pointerup", finishPointerDrag);
+      rangeElement.addEventListener("pointercancel", event => {
+        if (event.pointerId === activePointerId) {
+          activePointerId = null;
+        }
+      });
+    }
+
+    function bindPair(rangeElement, numberElement, config) {
+      const parseValue = rawValue => config.parse
+        ? config.parse(rawValue)
+        : Number.parseFloat(rawValue);
+      const formatValue = value => config.format
+        ? config.format(value)
+        : String(value);
+      const resolveBound = bound =>
+        typeof bound === "function" ? bound() : bound;
+      const renderInputChange = config.deferRender
+        ? scheduleControlRecalculation
+        : recalculateAndRender;
+
+      rangeElement.addEventListener("input", () => {
+        const value = Number.parseFloat(rangeElement.value);
+        config.set(value);
+        rangeElement.value = String(config.get());
+        numberElement.value = formatValue(config.get());
+        renderInputChange(false);
+      });
+
+      numberElement.addEventListener("input", () => {
+        const parsed = parseValue(numberElement.value);
+        if (!Number.isFinite(parsed)) return;
+        const value = clamp(
+          parsed,
+          resolveBound(config.min),
+          resolveBound(config.max)
+        );
+        config.set(value);
+        rangeElement.value = String(config.get());
+        renderInputChange(false);
+      });
+
+      const normalize = () => {
+        const parsed = parseValue(numberElement.value);
+        const value = Number.isFinite(parsed)
+          ? clamp(
+              parsed,
+              resolveBound(config.min),
+              resolveBound(config.max)
+            )
+          : config.get();
+        config.set(value);
+        numberElement.value = formatValue(config.get());
+        rangeElement.value = String(config.get());
+        recalculateAndRender(true);
+      };
+
+      numberElement.addEventListener("change", normalize);
+      numberElement.addEventListener("blur", normalize);
+    }
+
+    function bindControls() {
+      enableRangePointerDrag(elements.pedalRange);
+      enableRangePointerDrag(elements.thrustRange);
+      enableRangePointerDrag(elements.weightRange);
+      enableRangePointerDrag(elements.angularMomentumRange);
+      enableRangePointerDrag(elements.msaAltitudeRange);
+      enableRangePointerDrag(elements.airTemperatureRange);
+      enableRangePointerDrag(elements.windSpeedRange);
+      enableRangePointerDrag(elements.windDirectionRange);
+
+      bindPair(elements.pedalRange, elements.pedalNumber, {
+        min: MODEL_CONFIG.tailRotorMinPitchDeg,
+        max: () => currentTailRotorPitchLimitDeg(),
+        get: () => state.tailRotorPitchDegrees,
+        set: value => {
+          state.tailRotorPitchDegrees = clamp(
+            Math.round(value * 10) / 10,
+            MODEL_CONFIG.tailRotorMinPitchDeg,
+            currentTailRotorPitchLimitDeg()
+          );
+        }
+      });
+
+      bindPair(elements.thrustRange, elements.thrustNumber, {
+        min: 0,
+        max: 100,
+        get: () => state.enginePowerPercent,
+        set: value => {
+          setEnginePowerFromUser(value);
+        },
+        format: value => value.toFixed(1),
+        deferRender: true
+      });
+
+      bindPair(elements.weightRange, elements.weightNumber, {
+        min: MODEL_CONFIG.minHelicopterWeightKg / 1000,
+        max: MODEL_CONFIG.maxHelicopterWeightKg / 1000,
+        get: () => state.helicopterWeightKg / 1000,
+        set: value => {
+          const previousWeightKg = state.helicopterWeightKg;
+          const nextWeightKg = Math.round(value * 10) * 100;
+          const nextBounds = yawInertiaBoundsForWeight(nextWeightKg);
+          state.helicopterWeightKg = nextWeightKg;
+          state.yawInertiaKgM2 = clamp(
+            state.yawInertiaKgM2 * nextWeightKg / previousWeightKg,
+            nextBounds.min,
+            nextBounds.max
+          );
+          updateAngularMomentumControlUi();
+        },
+        parse: value => Number.parseFloat(value.replace(",", ".")),
+        format: value => value.toFixed(1).replace(".", ",")
+      });
+
+      bindPair(
+        elements.angularMomentumRange,
+        elements.angularMomentumNumber,
+        {
+          min: () => yawInertiaBoundsForWeight().min / 1000,
+          max: () => yawInertiaBoundsForWeight().max / 1000,
+          get: () => state.yawInertiaKgM2 / 1000,
+          set: value => {
+            const bounds = yawInertiaBoundsForWeight();
+            state.yawInertiaKgM2 = clamp(
+              Math.round(value * 10) * 100,
+              bounds.min,
+              bounds.max
+            );
+          },
+          format: value => value.toFixed(1)
+        }
+      );
+
+      bindPair(
+        elements.msaAltitudeRange,
+        elements.msaAltitudeNumber,
+        {
+          min: MODEL_CONFIG.minMsaAltitudeM,
+          max: MODEL_CONFIG.maxMsaAltitudeM,
+          get: () => state.msaAltitudeM,
+          set: value => {
+            state.msaAltitudeM = Math.round(value / 100) * 100;
+            state.airTemperatureC =
+              Math.round(
+                standardTemperatureCAtMsaAltitude(state.msaAltitudeM) * 10
+              ) / 10;
+            updateAtmosphereControlUi();
+            updatePitchLimitUi();
+          },
+          format: value => Math.round(value).toString()
+        }
+      );
+
+      bindPair(
+        elements.airTemperatureRange,
+        elements.airTemperatureNumber,
+        {
+          min: MODEL_CONFIG.minAirTemperatureC,
+          max: MODEL_CONFIG.maxAirTemperatureC,
+          get: () => state.airTemperatureC,
+          set: value => {
+            state.airTemperatureC = Math.round(value * 10) / 10;
+            updatePitchLimitUi();
+          },
+          format: value => value.toFixed(1)
+        }
+      );
+
+      bindPair(elements.windSpeedRange, elements.windSpeedNumber, {
+        min: 0,
+        max: 25,
+        get: () => state.windSpeedMps,
+        set: value => { state.windSpeedMps = Math.round(value * 2) / 2; }
+      });
+
+      elements.windDirectionRange.addEventListener("input", () => {
+        state.windFromDegrees = wrapDegrees(Number.parseFloat(elements.windDirectionRange.value));
+        elements.windDirectionNumber.value = String(Math.round(state.windFromDegrees));
+        updateControlUi();
+        recalculateAndRender(false);
+      });
+
+      elements.windDirectionNumber.addEventListener("input", () => {
+        const parsed = Number.parseFloat(elements.windDirectionNumber.value);
+        if (!Number.isFinite(parsed)) return;
+        state.windFromDegrees = wrapDegrees(parsed);
+        elements.windDirectionRange.value = String(Math.round(state.windFromDegrees));
+        elements.compassArrow.style.transform = `rotate(${state.windFromDegrees}deg)`;
+        elements.directionReadout.textContent =
+          `${String(Math.round(state.windFromDegrees)).padStart(3, "0")}° ` +
+          `${compassPoint(state.windFromDegrees)} · wind from`;
+        recalculateAndRender(false);
+      });
+
+      const normalizeDirection = () => {
+        const parsed = Number.parseFloat(elements.windDirectionNumber.value);
+        state.windFromDegrees = wrapDegrees(
+          Number.isFinite(parsed) ? parsed : state.windFromDegrees
+        );
+        updateControlUi();
+        recalculateAndRender(true);
+      };
+
+      elements.windDirectionNumber.addEventListener("change", normalizeDirection);
+      elements.windDirectionNumber.addEventListener("blur", normalizeDirection);
+
+      document.addEventListener("keydown", event => {
+        const isPedalKey =
+          event.key === "ArrowLeft" || event.key === "ArrowRight";
+        const isThrustKey =
+          event.key === "ArrowUp" || event.key === "ArrowDown";
+        if (
+          event.defaultPrevented ||
+          event.ctrlKey ||
+          event.altKey ||
+          event.metaKey ||
+          (!isPedalKey && !isThrustKey)
+        ) {
+          return;
+        }
+
+        const targetTag = event.target?.tagName?.toUpperCase() || "";
+        const isEditing =
+          targetTag === "INPUT" ||
+          targetTag === "TEXTAREA" ||
+          targetTag === "SELECT" ||
+          event.target?.isContentEditable;
+        if (isEditing) return;
+
+        const step = event.shiftKey ? 5 : 1;
+        if (isPedalKey) {
+          const direction = event.key === "ArrowRight" ? 1 : -1;
+          const pitchStep = event.shiftKey ? 1 : 0.1;
+          state.tailRotorPitchDegrees = clamp(
+            Math.round(
+              (state.tailRotorPitchDegrees + direction * pitchStep) * 10
+            ) / 10,
+            MODEL_CONFIG.tailRotorMinPitchDeg,
+            currentTailRotorPitchLimitDeg()
+          );
+        } else {
+          if (!state.isPaused) {
+            event.preventDefault();
+            return;
+          }
+          const direction = event.key === "ArrowUp" ? 1 : -1;
+          setEnginePowerFromUser(
+            state.enginePowerPercent + direction * step
+          );
+        }
+        updateControlUi();
+        recalculateAndRender(false);
+        event.preventDefault();
+      });
+
+      elements.pauseButton.addEventListener("click", () => {
+        if (!state.hasStarted) {
+          state.hasStarted = true;
+          state.isPaused = false;
+        } else {
+          state.isPaused = !state.isPaused;
+        }
+        state.lastFrameTimestamp = null;
+        state.physicsAccumulator = 0;
+        updatePauseUi();
+        recalculateAndRender(true);
+      });
+
+      elements.resetButton.addEventListener("click", resetSimulation);
+    }
+
+    function resetSimulation() {
+      state.headingRadians = 0;
+      state.yawRateRadiansPerSecond = 0;
+      state.verticalVelocityMps = 0;
+      state.tailRotorInducedVelocityMps = DEFAULT_INDUCED_VELOCITY;
+      const hoverTrim = hoverTrimForCurrentConditions();
+      state.enginePowerPercent = hoverTrim.powerPercent;
+      state.tailRotorPitchDegrees = hoverTrim.pitchDegrees;
+      state.simulationTimeSeconds = 0;
+      state.rotorPhaseRadians = 0;
+      state.hasStarted = true;
+      state.isPaused = true;
+      state.lastFrameTimestamp = null;
+      state.physicsAccumulator = 0;
+      state.uiAccumulator = 0;
+      state.chartAccumulator = 0;
+      state.lastFiniteHeadingRadians = 0;
+      state.lastFiniteYawRateRadiansPerSecond = 0;
+      state.lastFiniteVerticalVelocityMps = 0;
+      state.hasError = false;
+      chartVisualState.initialized = false;
+      chartVisualState.xCoordinates = [];
+      chartVisualState.referenceYCoordinates = [];
+      chartVisualState.referenceMsaAltitudeM = null;
+      chartVisualState.referenceAirTemperatureC = null;
+      chartVisualState.displayedYCoordinates = [];
+      chartVisualState.targetYCoordinates = [];
+      chartVisualState.rawLteState = "normal";
+      chartVisualState.visibleLteState = "normal";
+      chartVisualState.rawStateElapsedS = 0;
+      elements.errorBanner.classList.remove("visible");
+      updateControlUi();
+      updatePauseUi();
+      recalculateAndRender(true);
+    }
+
+    function frame(timestamp) {
+      if (state.lastFrameTimestamp === null) {
+        state.lastFrameTimestamp = timestamp;
+      }
+
+      const rawDelta = (timestamp - state.lastFrameTimestamp) / 1000;
+      const delta = clamp(finiteOr(rawDelta, 0), 0, MODEL_CONFIG.maxFrameTimeS);
+      state.lastFrameTimestamp = timestamp;
+
+      if (!state.isPaused && !state.hasError) {
+        state.physicsAccumulator += delta;
+        state.uiAccumulator += delta;
+        state.chartAccumulator += delta;
+        let steps = 0;
+
+        while (
+          state.physicsAccumulator >= MODEL_CONFIG.physicsStepS &&
+          steps < MODEL_CONFIG.maxCatchUpSteps
+        ) {
+          stepPhysics(MODEL_CONFIG.physicsStepS);
+          state.physicsAccumulator -= MODEL_CONFIG.physicsStepS;
+          steps += 1;
+        }
+
+        if (steps === MODEL_CONFIG.maxCatchUpSteps) {
+          state.physicsAccumulator = 0;
+        }
+      }
+
+      const model = state.latest || calculateModel();
+      updateSimulationGraphics(model);
+
+      if (state.uiAccumulator >= MODEL_CONFIG.numericUpdateIntervalS || state.isPaused) {
+        updateNumericUi(model, false);
+        state.uiAccumulator = 0;
+      }
+
+      if (state.chartAccumulator >= MODEL_CONFIG.chartUpdateIntervalS) {
+        updateLteChart(model);
+        state.chartAccumulator = 0;
+      }
+
+      renderLteChart(delta);
+
+      window.requestAnimationFrame(frame);
+    }
+
+    function initialize() {
+      state.nominalTrim = calibrateNominalTrim();
+      state.tailRotorPitchDegrees = state.nominalTrim.pitchRadians * RAD;
+      const hoverTrim = hoverTrimForCurrentConditions();
+      state.enginePowerPercent = hoverTrim.powerPercent;
+      state.tailRotorPitchDegrees = hoverTrim.pitchDegrees;
+      bindControls();
+      updateControlUi();
+      updatePauseUi();
+      state.latest = calculateModel();
+      state.tailRotorInducedVelocityMps = state.latest.tail.inducedVelocityMps;
+      updateSimulationGraphics(state.latest);
+      updateNumericUi(state.latest, true);
+      updateLteChart(state.latest);
+      window.requestAnimationFrame(frame);
+    }
+
+    initialize();
+  </script>
+</body>
+</html>
