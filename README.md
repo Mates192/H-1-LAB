@@ -20,7 +20,7 @@ Aplikace běží jako jediný samostatný soubor [`index.html`](index.html). Nep
 - změněny rozměry, otáčky, počty listů, odhad momentového ramene, aerodynamické plochy a výchozí kalibrace;
 - značka, metadata, odkazy a přístupný popis nyní odpovídají projektu H-1.
 
-## Spuštění
+### Online odkaz (GitHub Pages) — doporučený postup bez Actions
 
 Otevřete [`index.html`](index.html) v moderním prohlížeči. Pro lokální HTTP server lze použít například:
 
